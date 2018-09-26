@@ -1,10 +1,10 @@
-package main
+package build
 
 import (
 	"github.com/itfantasy/gonode/utils/args"
 )
 
-func main() {
+func Run() error {
 	parser := args.Parser().
 		AddArg("-p", "proj", "set the project name of the runtime").
 		AddArg("-v", "0", "set the runtime version").
