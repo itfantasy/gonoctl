@@ -15,7 +15,9 @@ func Run() error {
 		return err
 	}
 	go core().watchingDirectory()
-
+	if err := core().autoRun(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -67,9 +69,9 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 
 func (this *Grid) configParser() *args.ArgParser {
 	parser := args.Parser().
-		AddArg("-t", "", "set the target dir of the runtime").
-		AddArg("-f", "", "select the conf file").
-		AddArg("-l", "", "set the latest runtime.so").
+		AddArg("-d", "", "set the target dir of the runtime").
+		// AddArg("-f", "", "select the conf file"). // default .grconf
+		AddArg("-l", "", "set the latest runtime.so"). // default save the name to the file .gnruntime, and neednot next time
 		AddArg("-i", "", "dynamic set the id of the node").
 		AddArg("-u", "", "dynamic set the urls")
 	return parser
