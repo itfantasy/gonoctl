@@ -25,9 +25,9 @@ func (this *Grid) watchingDirectory() {
 							fmt.Println(err.Error())
 							continue
 						}
-						if ver > this.soVer {
-							this.soVer = ver
-							this.soFile = ev.Name
+						if ver > this.version {
+							this.version = ver
+							this.runtime = ev.Name
 							if this.autoHotUpdate(); err != nil {
 								fmt.Println(err.Error())
 								continue

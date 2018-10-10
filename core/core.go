@@ -7,6 +7,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/utils/args"
+	"github.com/itfantasy/gonode/utils/ini"
 )
 
 func Run() error {
@@ -23,11 +24,13 @@ func Run() error {
 
 type Grid struct {
 	watcher *fsnotify.Watcher
-	soPath  string
-	soFile  string
-	soVer   int
+	proj    string
+	runtime string
+	version int
 	nodeId  string
 	nodeUrl string
+	vername string
+	verinfo string
 }
 
 var _core *Grid = nil
@@ -40,14 +43,14 @@ func core() *Grid {
 }
 
 func (this *Grid) initialize(parser *args.ArgParser) error {
-	soPath, exist := parser.Get("-t")
+	proj, exist := parser.Get("-d")
 	if !exist {
-		return errors.New("(-t) please set the target dir of the runtime!")
+		return errors.New("(-d) please set the target dir of the runtime!")
 	}
-	this.soPath = soPath
+	this.proj = proj
 
-	soFile, exist := parser.Get("-l")
-	this.soFile = soFile
+	runtime, exist := parser.Get("-l")
+	this.runtime = runtime
 
 	nodeId, exist := parser.Get("-i")
 	this.nodeId = nodeId
@@ -59,7 +62,7 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 	if err != nil {
 		return err
 	}
-	if watcher.Add(this.soPath); err != nil {
+	if watcher.Add(this.proj); err != nil {
 		return err
 	}
 	this.watcher = watcher
@@ -70,21 +73,35 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 func (this *Grid) configParser() *args.ArgParser {
 	parser := args.Parser().
 		AddArg("-d", "", "set the target dir of the runtime").
-		// AddArg("-f", "", "select the conf file"). // default .grconf
-		AddArg("-l", "", "set the latest runtime.so"). // default save the name to the file .gnruntime, and neednot next time
+		AddArg("-l", "", "set the latest runtime.so").
 		AddArg("-i", "", "dynamic set the id of the node").
 		AddArg("-u", "", "dynamic set the urls")
 	return parser
 }
 
-func (this *Grid) createNodeInfo() *gen_server.NodeInfo {
+func (this *Grid) setupConfig() (*gen_server.NodeInfo, error) {
+	conf, err := ini.Load(this.proj + ".conf")
+	if err != nil {
+		return nil, err
+	}
+
 	nodeInfo := gen_server.NewNodeInfo()
 
-	return nodeInfo
+	nodeInfo.Id = conf.Get("node", "id")
+	nodeInfo.Url = conf.Get("node", "url")
+	nodeInfo.AutoDetect = conf.GetInt("node", "autodetect", 0) > 0
+	nodeInfo.Public = conf.GetInt("node", "public", 0) > 0
+
+	nodeInfo.RedUrl = conf.Get("redis", "url")
+	nodeInfo.RedPool = conf.GetInt("redis", "pool", 0)
+	nodeInfo.RedDB = conf.GetInt("redis", "db", 0)
+	nodeInfo.RedAuth = conf.Get("redis", "auth")
+
+	return nodeInfo, nil
 }
 
 func (this *Grid) autoHotUpdate() error {
-	so, err := plugin.Open(this.soPath + this.soFile)
+	so, err := plugin.Open(this.proj + this.runtime)
 	if err != nil {
 		return err
 	}
@@ -97,7 +114,7 @@ func (this *Grid) autoHotUpdate() error {
 }
 
 func (this *Grid) autoRun() error {
-	so, err := plugin.Open(this.soPath + this.soFile)
+	so, err := plugin.Open(this.proj + this.runtime)
 	if err != nil {
 		return err
 	}
@@ -105,6 +122,15 @@ func (this *Grid) autoRun() error {
 	if err != nil {
 		return err
 	}
-	funcLaunch.(func(*gen_server.NodeInfo))(this.createNodeInfo())
+	config, err := this.setupConfig()
+	if err != nil {
+		return err
+	}
+	funcLaunch.(func(*gen_server.NodeInfo))(config)
+	return nil
+}
+
+func (this *Grid) saveRuntimeName() error {
+	// save the runtimename to .runtime as a default name for next time
 	return nil
 }

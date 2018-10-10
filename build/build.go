@@ -13,14 +13,14 @@ import (
 
 func Run() error {
 	parser := args.Parser().
-		AddArg("-p", "proj", "set the project name of the runtime").
-		AddArg("-v", "0", "set the runtime version")
+		AddArg("p", "proj", "set the project name of the runtime").
+		AddArg("v", "0", "set the runtime version")
 
-	projName, b := parser.Get("-p")
+	projName, b := parser.Get("p")
 	if !b {
 		return errors.New("the project name (-p) is necessary!")
 	}
-	ver, b := parser.GetInt("-v")
+	ver, b := parser.GetInt("v")
 	if !b {
 		return errors.New("the runtime version (-v) is necessary!")
 	}
