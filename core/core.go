@@ -43,19 +43,19 @@ func core() *Grid {
 }
 
 func (this *Grid) initialize(parser *args.ArgParser) error {
-	proj, exist := parser.Get("-d")
+	proj, exist := parser.Get("d")
 	if !exist {
-		return errors.New("(-d) please set the target dir of the runtime!")
+		return errors.New("(d) please set the target dir of the runtime!")
 	}
 	this.proj = proj
 
-	runtime, exist := parser.Get("-l")
+	runtime, exist := parser.Get("l")
 	this.runtime = runtime
 
-	nodeId, exist := parser.Get("-i")
+	nodeId, exist := parser.Get("i")
 	this.nodeId = nodeId
 
-	nodeUrl, exist := parser.Get("-u")
+	nodeUrl, exist := parser.Get("u")
 	this.nodeUrl = nodeUrl
 
 	watcher, err := fsnotify.NewWatcher()
@@ -72,10 +72,10 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 
 func (this *Grid) configParser() *args.ArgParser {
 	parser := args.Parser().
-		AddArg("-d", "", "set the target dir of the runtime").
-		AddArg("-l", "", "set the latest runtime.so").
-		AddArg("-i", "", "dynamic set the id of the node").
-		AddArg("-u", "", "dynamic set the urls")
+		AddArg("d", "", "set the target dir of the runtime").
+		AddArg("l", "", "set the latest runtime.so").
+		AddArg("i", "", "dynamic set the id of the node").
+		AddArg("u", "", "dynamic set the urls")
 	return parser
 }
 
