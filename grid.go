@@ -1,7 +1,8 @@
-package core
+package main
 
 import (
 	"errors"
+	"fmt"
 	"plugin"
 
 	"github.com/fsnotify/fsnotify"
@@ -10,16 +11,17 @@ import (
 	"github.com/itfantasy/gonode/utils/ini"
 )
 
-func Run() error {
-	parser := core().configParser()
-	if err := core().initialize(parser); err != nil {
-		return err
+func main() {
+	grid := NewGrid()
+	parser := grid.configParser()
+	if err := grid.initialize(parser); err != nil {
+		fmt.Println(err)
 	}
-	go core().watchingDirectory()
-	if err := core().autoRun(); err != nil {
-		return err
+	go grid.watchingDirectory()
+	if err := grid.autoRun(); err != nil {
+		fmt.Println(err)
 	}
-	return nil
+	fmt.Println("finished!!")
 }
 
 type Grid struct {
@@ -33,13 +35,9 @@ type Grid struct {
 	verinfo string
 }
 
-var _core *Grid = nil
-
-func core() *Grid {
-	if _core == nil {
-		_core = new(Grid)
-	}
-	return _core
+func NewGrid() *Grid {
+	this := new(Grid)
+	return this
 }
 
 func (this *Grid) initialize(parser *args.ArgParser) error {
@@ -47,7 +45,7 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 	if !exist {
 		return errors.New("(d) please set the target dir of the runtime!")
 	}
-	this.proj = proj
+	this.proj = proj + "/"
 
 	runtime, exist := parser.Get("l")
 	this.runtime = runtime
@@ -72,8 +70,8 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 
 func (this *Grid) configParser() *args.ArgParser {
 	parser := args.Parser().
-		AddArg("d", "", "set the target dir of the runtime").
-		AddArg("l", "", "set the latest runtime.so").
+		AddArg("d", "runtime", "set the target dir of the runtime").
+		AddArg("l", "runtime_0.so", "set the latest runtime.so").
 		AddArg("i", "", "dynamic set the id of the node").
 		AddArg("u", "", "dynamic set the urls")
 	return parser
