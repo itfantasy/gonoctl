@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
@@ -19,7 +21,7 @@ func (this *Grid) watchingDirectory() {
 			{
 				if ev.Op&fsnotify.Create == fsnotify.Create {
 					if this.isSoLibFile(ev.Name) {
-						fmt.Println("find a new file : ", ev.Name)
+						fmt.Println("[watcher]::find a new runtime : ", ev.Name)
 						ver, err := this.getRunTimeInfo(ev.Name)
 						if err != nil {
 							fmt.Println(err.Error())
@@ -32,9 +34,10 @@ func (this *Grid) watchingDirectory() {
 								fmt.Println(err.Error())
 								continue
 							}
-							fmt.Println("an new version : " + ev.Name + " has been loaded !")
+							fmt.Println("[watcher]::an new version : " + ev.Name + " has been loaded !")
+							this.printVersionInfo()
 						} else {
-							fmt.Println("no need update !")
+							fmt.Println("[watcher]::no need update !")
 						}
 					}
 				}
@@ -58,6 +61,18 @@ func (this *Grid) isSoLibFile(fileName string) bool {
 }
 
 func (this *Grid) getRunTimeInfo(fileName string) (int, error) {
-
-	return 0, nil
+	infos := strings.Split(fileName, ".")
+	if len(infos) != 2 {
+		return 0, errors.New("illegal runtime file name! -1")
+	}
+	runtimeName := infos[0]
+	strs := strings.Split(runtimeName, "_")
+	if len(strs) != 2 {
+		return 0, errors.New("illegal runtime file name! -2")
+	}
+	ver, err := strconv.Atoi(strs[1])
+	if err != nil {
+		return 0, errors.New("illegal runtime file name! -3")
+	}
+	return ver, nil
 }

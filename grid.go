@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"plugin"
+	"strconv"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
@@ -103,6 +104,10 @@ func (this *Grid) autoHotUpdate() error {
 	if err != nil {
 		return err
 	}
+	err2 := this.autoVersion(so)
+	if err2 != nil {
+		return err2
+	}
 	funcUpdate, err := so.Lookup("OnHotUpdate")
 	if err != nil {
 		return err
@@ -116,6 +121,11 @@ func (this *Grid) autoRun() error {
 	if err != nil {
 		return err
 	}
+	err2 := this.autoVersion(so)
+	if err2 != nil {
+		return err2
+	}
+	this.printVersionInfo()
 	funcLaunch, err := so.Lookup("Launch")
 	if err != nil {
 		return err
@@ -128,7 +138,28 @@ func (this *Grid) autoRun() error {
 	return nil
 }
 
+func (this *Grid) autoVersion(so *plugin.Plugin) error {
+	funcVersionName, err := so.Lookup("VersionName")
+	if err != nil {
+		return err
+	}
+	this.vername = funcVersionName.(func() string)()
+	funcVersionInfo, err := so.Lookup("VersionInfo")
+	if err != nil {
+		return err
+	}
+	this.verinfo = funcVersionInfo.(func() string)()
+	return nil
+}
+
 func (this *Grid) saveRuntimeName() error {
 	// save the runtimename to .runtime as a default name for next time
 	return nil
+}
+
+func (this Grid) printVersionInfo() {
+	fmt.Println("--------" + this.runtime + "--------")
+	fmt.Println(" ver:	" + this.vername + "|" + strconv.Itoa(this.version))
+	fmt.Println(" info:	" + this.verinfo)
+	fmt.Println("----------------------------")
 }
