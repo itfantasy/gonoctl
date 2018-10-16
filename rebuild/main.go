@@ -11,7 +11,7 @@ import (
 	"github.com/itfantasy/gonode/utils/args"
 )
 
-func Run() error {
+func run() error {
 	parser := args.Parser().
 		AddArg("p", "runtime", "set the project name of the runtime").
 		AddArg("v", "0", "set the runtime version")
@@ -52,7 +52,7 @@ func buildTheRunTime(projName string, ver int) error {
 }
 
 func main() {
-	err := Run()
+	err := run()
 	if err != nil {
 		fmt.Println(err)
 	}
