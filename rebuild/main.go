@@ -22,7 +22,7 @@ func run() error {
 	}
 	ver, b := parser.GetInt("v")
 	if !b {
-		return errors.New("the runtime version (-v) is necessary!")
+		return errors.New("the runtime version (-v) is necessary and it must be int!")
 	}
 	return buildTheRunTime(projName, ver)
 }
