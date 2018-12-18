@@ -1,0 +1,27 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ##NAME##
+spec:
+  replicas: ##NUM##
+  template:
+    metadata:
+      labels:
+        app: ##APPNAME##
+		engine: grid
+    spec:
+      containers:
+      - name: ##NAME##-instance
+        image: itfantasy/grid
+        command: ["etc/grid/grid", "-d=/etc/grid/runtime"##OTHERARGS##]
+        volumeMounts:
+        - name: runtime-volume
+          mountPath: /etc/grid/runtime
+        ports:
+        - containerPort: ##PORT##
+      volumes:
+      - name: runtime-volume
+        hostPath:
+          path: ##DIRECTORY##
+          type: Directory
