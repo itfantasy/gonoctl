@@ -9,12 +9,12 @@ spec:
     metadata:
       labels:
         app: ##APPNAME##
-		engine: grid
+        engine: grid
     spec:
       containers:
       - name: ##NAME##-instance
         image: itfantasy/grid
-        command: ["etc/grid/grid", "-d=/etc/grid/runtime"##OTHERARGS##]
+        command: ["etc/grid/grid", "-d=/etc/grid/runtime"##COMMAND##]
         volumeMounts:
         - name: runtime-volume
           mountPath: /etc/grid/runtime
@@ -23,5 +23,5 @@ spec:
       volumes:
       - name: runtime-volume
         hostPath:
-          path: ##DIRECTORY##
+          path: ##RUNTIME##
           type: Directory

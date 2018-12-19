@@ -5,10 +5,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os/exec"
 
 	"github.com/itfantasy/gonode/utils/args"
+	"github.com/itfantasy/gonode/utils/io"
 )
 
 func run() error {
@@ -53,7 +53,7 @@ func runGridDockerImage(parser *args.ArgParser) error {
 		baseCmd += "-P "
 	}
 	baseCmd += " itfantasy/grid " + gridCmd
-	err := save(".sh", baseCmd)
+	err := io.SaveFile(".sh", baseCmd)
 	if err != nil {
 		return err
 	}
@@ -81,11 +81,6 @@ func runGridDockerImage(parser *args.ArgParser) error {
 	}
 
 	return nil
-}
-
-func save(file string, content string) error {
-	data := []byte(content)
-	return ioutil.WriteFile(file, data, 0644)
 }
 
 func main() {

@@ -1,68 +1,108 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/itfantasy/gonode/utils/io"
-	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/yaml"
 )
 
 type clusterYaml struct {
-	appName string `yaml:appName`
-	cluster struct {
-		deployments []struct {
-			name     string `yaml:name`
-			replicas int    `yaml:replicas`
-			port     int    `yaml:port`
-			runtime  string `yaml:runtime`
-			command  string `yaml:command`
+	AppName string `yaml:"appName"`
+	Cluster struct {
+		Deployments []struct {
+			Name    string `yaml:"name"`
+			Num     int    `yaml:"num"`
+			Port    string `yaml:"port"`
+			Runtime string `yaml:"runtime"`
+			Command string `yaml:"command"`
 		}
 	}
 }
 
 func run() error {
-	dict, err := configParser()
+	cluster, err := clusterConfigParser()
 	if err != nil {
 		return err
 	}
-	return deployGridForK8s(dict)
+	return deployGridClusterForK8s(cluster)
 }
 
-func configParser() (*clusterYaml, error) {
-	fileContent, err := load(io.CurDir() + "cluster.yaml")
+func clusterConfigParser() (*clusterYaml, error) {
+	fileContent, err := io.LoadFile(io.CurDir() + ".cluster.yaml")
 	if err != nil {
 		return nil, err
 	}
 	cluster := new(clusterYaml)
-	dict, err := yaml.Decode(fileContent, cluster)
-	if err != nil {
+	if yaml.Decode(fileContent, cluster); err != nil {
 		return nil, err
 	}
 	return cluster, nil
 }
 
-func deployGridForK8s(cluster *clusterYaml) error {
-	_, err := load(io.CurDir() + ".grid-deployment.yaml")
+func deployGridClusterForK8s(cluster *clusterYaml) error {
+	yamlConfig, err := io.LoadFile(io.CurDir() + ".deployment.yaml")
 	if err != nil {
 		return err
 	}
-	json.Println(cluster)
+	for _, deployment := range cluster.Cluster.Deployments {
+		if err := deployDeployment(yamlConfig,
+			cluster.AppName,
+			deployment.Name,
+			deployment.Num,
+			deployment.Port,
+			deployment.Runtime,
+			deployment.Command); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func load(file string) (string, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return "", err
+func deployDeployment(yamlConfig string, appName string, name string, num int, port string, runtime string, command string) error {
+	if num < 0 {
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		cmd := exec.Command("kubectl", "delete", "deployment", name)
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
+			return err
+		}
+		return nil
 	}
-	return string(bytes), nil
-}
 
-func save(file string, content string) error {
-	data := []byte(content)
-	return ioutil.WriteFile(file, data, 0644)
+	yamlConfig = strings.Replace(yamlConfig, "##APPNAME##", appName, -1)
+	yamlConfig = strings.Replace(yamlConfig, "##NAME##", name, -1)
+	yamlConfig = strings.Replace(yamlConfig, "##NUM##", strconv.Itoa(num), -1)
+	yamlConfig = strings.Replace(yamlConfig, "##PORT##", port, -1)
+	yamlConfig = strings.Replace(yamlConfig, "##RUNTIME##", runtime, -1)
+	if command != "" {
+		yamlConfig = strings.Replace(yamlConfig, "##COMMAND##", ", "+command, -1)
+	} else {
+		yamlConfig = strings.Replace(yamlConfig, "##COMMAND##", "", -1)
+	}
+	if err := io.SaveFile(io.CurDir()+"."+name+".yaml", yamlConfig); err != nil {
+		return err
+	}
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
+	cmd := exec.Command("kubectl", "apply", "-f", "."+name+".yaml")
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
+		return err
+	}
+
+	return nil
 }
 
 func main() {
