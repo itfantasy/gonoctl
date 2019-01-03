@@ -20,6 +20,11 @@ spec:
           mountPath: /etc/grid/runtime
         ports:
         - containerPort: ##PORT##
+        env:
+        - name: GRID_NODE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
       volumes:
       - name: runtime-volume
         hostPath:

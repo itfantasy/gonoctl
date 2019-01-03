@@ -2,7 +2,7 @@ appName: grid-cluster-demo
 cluster: 
   deployments:
   - name: grid-deployment
-    num: 3
+    num: 2
     port: 8802
     runtime: /home/docker/runtime
     command: ""

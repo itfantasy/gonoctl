@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"plugin"
 	"strconv"
 
@@ -51,8 +52,13 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 	runtime, exist := parser.Get("l")
 	this.runtime = runtime
 
-	nodeId, exist := parser.Get("i")
-	this.nodeId = nodeId
+	GRID_NODE_ID := os.Getenv("GRID_NODE_ID")
+	if GRID_NODE_ID != "" {
+		this.nodeId = GRID_NODE_ID
+	} else {
+		nodeId, _ := parser.Get("i")
+		this.nodeId = nodeId
+	}
 
 	nodeUrl, exist := parser.Get("u")
 	this.nodeUrl = nodeUrl
@@ -86,8 +92,17 @@ func (this *Grid) setupConfig() (*gen_server.NodeInfo, error) {
 
 	nodeInfo := gen_server.NewNodeInfo()
 
-	nodeInfo.Id = conf.Get("node", "id")
-	nodeInfo.Url = conf.Get("node", "url")
+	if this.nodeId == "" {
+		nodeInfo.Id = conf.Get("node", "id")
+	} else {
+		nodeInfo.Id = this.nodeId
+	}
+	if this.nodeUrl == "" {
+		nodeInfo.Url = conf.Get("node", "url")
+	} else {
+		nodeInfo.Url = this.nodeUrl
+	}
+
 	nodeInfo.AutoDetect = conf.GetInt("node", "autodetect", 0) > 0
 	nodeInfo.Public = conf.GetInt("node", "public", 0) > 0
 
