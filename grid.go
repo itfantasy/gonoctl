@@ -55,13 +55,21 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 	GRID_NODE_ID := os.Getenv("GRID_NODE_ID")
 	if GRID_NODE_ID != "" {
 		this.nodeId = GRID_NODE_ID
+
+		GRID_NODE_IP := os.Getenv("GRID_NODE_IP")
+		GRID_NODE_PORT := os.Getenv("GRID_NODE_PORT")
+		GRID_NODE_PROTO := os.Getenv("GRID_NODE_PROTO")
+
+		this.nodeUrl = GRID_NODE_PROTO + "://" + GRID_NODE_IP + ":" + GRID_NODE_PORT
+
 	} else {
 		nodeId, _ := parser.Get("i")
 		this.nodeId = nodeId
-	}
 
-	nodeUrl, exist := parser.Get("u")
-	this.nodeUrl = nodeUrl
+		nodeUrl, _ := parser.Get("u")
+		this.nodeUrl = nodeUrl
+
+	}
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {

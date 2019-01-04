@@ -3,6 +3,7 @@ cluster:
   deployments:
   - name: grid-deployment
     num: 2
+	proto: kcp
     port: 8802
     runtime: /home/docker/runtime
     command: ""

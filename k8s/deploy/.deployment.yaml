@@ -25,6 +25,14 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: GRID_NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: GRID_NODE_PORT
+          value: ##PORT##
+        - name: GRID_NODE_PROTO
+          value: ##PROTO##
       volumes:
       - name: runtime-volume
         hostPath:
