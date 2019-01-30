@@ -17,6 +17,7 @@ type clusterYaml struct {
 		Deployments []struct {
 			Name    string `yaml:"name"`
 			Num     int    `yaml:"num"`
+			Proto   string `yaml:"proto"`
 			Port    string `yaml:"port"`
 			Runtime string `yaml:"runtime"`
 			Command string `yaml:"command"`
@@ -54,6 +55,7 @@ func deployGridClusterForK8s(cluster *clusterYaml) error {
 			cluster.AppName,
 			deployment.Name,
 			deployment.Num,
+			deployment.Proto,
 			deployment.Port,
 			deployment.Runtime,
 			deployment.Command); err != nil {
@@ -63,7 +65,7 @@ func deployGridClusterForK8s(cluster *clusterYaml) error {
 	return nil
 }
 
-func deployDeployment(yamlConfig string, appName string, name string, num int, port string, runtime string, command string) error {
+func deployDeployment(yamlConfig string, appName string, name string, num int, proto string, port string, runtime string, command string) error {
 	if num < 0 {
 		var out bytes.Buffer
 		var stderr bytes.Buffer
@@ -80,6 +82,7 @@ func deployDeployment(yamlConfig string, appName string, name string, num int, p
 	yamlConfig = strings.Replace(yamlConfig, "##APPNAME##", appName, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##NAME##", name, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##NUM##", strconv.Itoa(num), -1)
+	yamlConfig = strings.Replace(yamlConfig, "##PROTO##", proto, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##PORT##", port, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##RUNTIME##", runtime, -1)
 	if command != "" {

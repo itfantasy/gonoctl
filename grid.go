@@ -9,6 +9,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/utils/args"
 	"github.com/itfantasy/gonode/utils/ini"
 )
@@ -59,8 +60,12 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 		GRID_NODE_IP := os.Getenv("GRID_NODE_IP")
 		GRID_NODE_PORT := os.Getenv("GRID_NODE_PORT")
 		GRID_NODE_PROTO := os.Getenv("GRID_NODE_PROTO")
+		GRID_NODE_NAME := os.Getenv("GRID_NODE_NAME")
 
 		this.nodeUrl = GRID_NODE_PROTO + "://" + GRID_NODE_IP + ":" + GRID_NODE_PORT
+		if GRID_NODE_PROTO == nets.WS {
+			this.nodeUrl += "/" + GRID_NODE_NAME
+		}
 
 	} else {
 		nodeId, _ := parser.Get("i")

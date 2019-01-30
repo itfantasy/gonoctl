@@ -29,8 +29,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: GRID_NODE_NAME
+          value: ##NAME##
         - name: GRID_NODE_PORT
-          value: ##PORT##
+          value: "##PORT##"
         - name: GRID_NODE_PROTO
           value: ##PROTO##
       volumes:
