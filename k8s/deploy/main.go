@@ -19,6 +19,8 @@ type clusterYaml struct {
 			Num     int    `yaml:"num"`
 			Proto   string `yaml:"proto"`
 			Port    string `yaml:"port"`
+			Public  bool   `yaml:"public"`
+			NodeIP  string `yaml:"nodeip"`
 			Runtime string `yaml:"runtime"`
 			Command string `yaml:"command"`
 		}
@@ -42,6 +44,7 @@ func clusterConfigParser() (*clusterYaml, error) {
 	if yaml.Decode(fileContent, cluster); err != nil {
 		return nil, err
 	}
+	yaml.Println(cluster)
 	return cluster, nil
 }
 
@@ -57,6 +60,8 @@ func deployGridClusterForK8s(cluster *clusterYaml) error {
 			deployment.Num,
 			deployment.Proto,
 			deployment.Port,
+			deployment.Public,
+			deployment.NodeIP,
 			deployment.Runtime,
 			deployment.Command); err != nil {
 			return err
@@ -65,7 +70,7 @@ func deployGridClusterForK8s(cluster *clusterYaml) error {
 	return nil
 }
 
-func deployDeployment(yamlConfig string, appName string, name string, num int, proto string, port string, runtime string, command string) error {
+func deployDeployment(yamlConfig string, appName string, name string, num int, proto string, port string, public bool, nodeip string, runtime string, command string) error {
 	if num < 0 {
 		var out bytes.Buffer
 		var stderr bytes.Buffer
@@ -75,6 +80,9 @@ func deployDeployment(yamlConfig string, appName string, name string, num int, p
 		if err := cmd.Run(); err != nil {
 			fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
 			return err
+		}
+		if public {
+			return deleteService(name)
 		}
 		return nil
 	}
@@ -105,7 +113,68 @@ func deployDeployment(yamlConfig string, appName string, name string, num int, p
 		return err
 	}
 
+	if public {
+		return deployService(appName, name, proto, port, nodeip)
+	}
+
 	return nil
+}
+
+var _yamlServiceConfig string = ""
+
+func deployService(appName string, name string, proto string, port string, nodeip string) error {
+
+	yamlServiceConfig, err := io.LoadFile(io.CurDir() + ".service.yaml")
+	if err != nil {
+		return err
+	}
+
+	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##APPNAME##", appName, -1)
+	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##NAME##", name, -1)
+	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##PROTO##", proto2String(proto), -1)
+	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##PORT##", port, -1)
+	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##NODEIP##", nodeip, -1)
+	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##NODEPORT##", port, -1)
+
+	if err := io.SaveFile(io.CurDir()+"."+name+"-service.yaml", yamlServiceConfig); err != nil {
+		return err
+	}
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
+	cmd := exec.Command("kubectl", "apply", "-f", "."+name+"-service.yaml")
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
+		return err
+	}
+
+	return nil
+}
+
+func deleteService(name string) error {
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd := exec.Command("kubectl", "delete", "service", name+"-service")
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
+		return err
+	}
+	return nil
+}
+
+func proto2String(proto string) string {
+	switch proto {
+	case "kcp":
+		return "UDP"
+	case "tcp":
+		return "TCP"
+	}
+	return ""
 }
 
 func main() {

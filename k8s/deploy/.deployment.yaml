@@ -9,7 +9,8 @@ spec:
     metadata:
       labels:
         app: ##APPNAME##
-        engine: grid
+        engine: itfantasy-grid
+        tag: ##NAME##
     spec:
       containers:
       - name: ##NAME##-instance
@@ -29,7 +30,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        - name: GRID_NODE_NAME
+        - name: GRID_NODE_LABEL
           value: ##NAME##
         - name: GRID_NODE_PORT
           value: "##PORT##"

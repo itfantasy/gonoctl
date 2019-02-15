@@ -5,5 +5,7 @@ cluster:
     num: 3
     proto: kcp
     port: 8802
+    public: true
+    nodeip: 192.168.10.85
     runtime: /home/docker/runtime
     command: ""
