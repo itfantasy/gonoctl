@@ -90,7 +90,8 @@ func deployDeployment(yamlConfig string, appName string, name string, num int, p
 	yamlConfig = strings.Replace(yamlConfig, "##APPNAME##", appName, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##NAME##", name, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##NUM##", strconv.Itoa(num), -1)
-	yamlConfig = strings.Replace(yamlConfig, "##PROTO##", proto, -1)
+	yamlConfig = strings.Replace(yamlConfig, "##PROTO##", proto2String(proto), -1)
+	yamlConfig = strings.Replace(yamlConfig, "##GRIDPROTO##", proto, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##PORT##", port, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##RUNTIME##", runtime, -1)
 	if command != "" {
@@ -98,7 +99,9 @@ func deployDeployment(yamlConfig string, appName string, name string, num int, p
 	} else {
 		yamlConfig = strings.Replace(yamlConfig, "##COMMAND##", "", -1)
 	}
-	if err := io.SaveFile(io.CurDir()+"."+name+".yaml", yamlConfig); err != nil {
+
+	filePath := io.CurDir() + "." + name + ".yaml"
+	if err := io.SaveFile(filePath, yamlConfig); err != nil {
 		return err
 	}
 
@@ -112,6 +115,7 @@ func deployDeployment(yamlConfig string, appName string, name string, num int, p
 		fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
 		return err
 	}
+	io.DeleteFile(filePath)
 
 	if public {
 		return deployService(appName, name, proto, port, nodeip)
@@ -136,7 +140,8 @@ func deployService(appName string, name string, proto string, port string, nodei
 	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##NODEIP##", nodeip, -1)
 	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##NODEPORT##", port, -1)
 
-	if err := io.SaveFile(io.CurDir()+"."+name+"-service.yaml", yamlServiceConfig); err != nil {
+	filePath := io.CurDir() + "." + name + "-service.yaml"
+	if err := io.SaveFile(filePath, yamlServiceConfig); err != nil {
 		return err
 	}
 
@@ -150,6 +155,7 @@ func deployService(appName string, name string, proto string, port string, nodei
 		fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
 		return err
 	}
+	io.DeleteFile(filePath)
 
 	return nil
 }
