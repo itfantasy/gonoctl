@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/itfantasy/gonode"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 )
 
@@ -21,19 +22,19 @@ func (this *GridNode) SelfInfo() (*gen_server.NodeInfo, error) {
 func (this *GridNode) Start() {
 
 }
-func (this *GridNode) OnDetect(string) bool {
+func (this *GridNode) OnDetect(id string) bool {
 	return false
 }
-func (this *GridNode) OnConn(string) {
+func (this *GridNode) OnConn(id string) {
 
 }
-func (this *GridNode) OnMsg(string, []byte) {
+func (this *GridNode) OnMsg(id string, msg []byte) {
+	gonode.Send(id, msg)
+}
+func (this *GridNode) OnClose(id string) {
 
 }
-func (this *GridNode) OnClose(string) {
-
-}
-func (this *GridNode) OnShell(string, string) {
+func (this *GridNode) OnShell(channel string, msg string) {
 
 }
 func (this *GridNode) OnRanId() string {
