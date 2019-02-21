@@ -1,0 +1,45 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ##NAME##-##STATEINDEX##
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ##APPNAME##
+        engine: itfantasy-grid
+        tag: ##NAME##
+        stateIndex: "##STATEINDEX##"
+    spec:
+      hostNetwork: true
+      containers:
+      - name: ##NAME##-instance
+        image: itfantasy/grid
+        command: ["etc/grid/grid", "-d=/etc/grid/runtime"##COMMAND##]
+        volumeMounts:
+        - name: runtime-volume
+          mountPath: /etc/grid/runtime
+        ports:
+        - containerPort: ##PORT##
+          hostPort: ##PORT##
+          protocol: ##PROTO##
+        env:
+        - name: GRID_NODE_ID
+          value: ##NAME##-##STATEINDEX##
+        - name: GRID_NODE_IP
+          value: ##NODEIP##
+        - name: GRID_NODE_LABEL
+          value: ##NAME##
+        - name: GRID_NODE_PORT
+          value: "##PORT##"
+        - name: GRID_NODE_PROTO
+          value: ##GRIDPROTO##
+        - name: GRID_NODE_STATEINDEX
+          value: "##STATEINDEX##"
+      volumes:
+      - name: runtime-volume
+        hostPath:
+          path: ##RUNTIME##
+          type: Directory

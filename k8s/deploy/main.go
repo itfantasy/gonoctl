@@ -16,6 +16,7 @@ type clusterYaml struct {
 	Cluster struct {
 		Deployments []struct {
 			Name    string `yaml:"name"`
+			Enable  int    `yaml:"enable"`
 			Num     int    `yaml:"num"`
 			Proto   string `yaml:"proto"`
 			Port    string `yaml:"port"`
@@ -23,6 +24,20 @@ type clusterYaml struct {
 			NodeIP  string `yaml:"nodeip"`
 			Runtime string `yaml:"runtime"`
 			Command string `yaml:"command"`
+		}
+		StateDeployments []struct {
+			Name           string `yaml:"name"`
+			Enable         int    `yaml:"enable"`
+			Num            int    `yaml:"num"`
+			Proto          string `yaml:"proto"`
+			PortBase       int    `yaml:"portBase"`
+			PortStep       int    `yaml:"portStep"`
+			StateIndexBase int    `yaml:"stateIndexBase"`
+			StateIndexStep int    `yaml:"stateIndexStep"`
+			Public         bool   `yaml:"public"`
+			NodeIP         string `yaml:"nodeip"`
+			Runtime        string `yaml:"runtime"`
+			Command        string `yaml:"command"`
 		}
 	}
 }
@@ -49,14 +64,16 @@ func clusterConfigParser() (*clusterYaml, error) {
 }
 
 func deployGridClusterForK8s(cluster *clusterYaml) error {
-	yamlConfig, err := io.LoadFile(io.CurDir() + ".deployment.yaml")
+
+	deploymentYamlConfig, err := io.LoadFile(io.CurDir() + ".deployment.yaml")
 	if err != nil {
 		return err
 	}
 	for _, deployment := range cluster.Cluster.Deployments {
-		if err := deployDeployment(yamlConfig,
+		if err := deployDeployment(deploymentYamlConfig,
 			cluster.AppName,
 			deployment.Name,
+			deployment.Enable,
 			deployment.Num,
 			deployment.Proto,
 			deployment.Port,
@@ -67,11 +84,97 @@ func deployGridClusterForK8s(cluster *clusterYaml) error {
 			return err
 		}
 	}
+
+	stateDeploymentYamlConfig, err := io.LoadFile(io.CurDir() + ".state-deployment.yaml")
+	if err != nil {
+		return err
+	}
+	for _, stateDeployment := range cluster.Cluster.StateDeployments {
+		if err := deployStateDeployment(stateDeploymentYamlConfig,
+			cluster.AppName,
+			stateDeployment.Name,
+			stateDeployment.Enable,
+			stateDeployment.Num,
+			stateDeployment.Proto,
+			stateDeployment.PortBase,
+			stateDeployment.PortStep,
+			stateDeployment.StateIndexBase,
+			stateDeployment.StateIndexStep,
+			stateDeployment.Public,
+			stateDeployment.NodeIP,
+			stateDeployment.Runtime,
+			stateDeployment.Command); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func deployDeployment(yamlConfig string, appName string, name string, num int, proto string, port string, public bool, nodeip string, runtime string, command string) error {
-	if num < 0 {
+func deployStateDeployment(yamlConfig_ string, appName string, name string, enable int, num int, proto string, portBase int, portStep int, stateIndexBase int, stateIndexStep int, public bool, nodeip string, runtime string, command string) error {
+	if enable < 0 {
+		for i := 0; i < num; i++ {
+			stateIndex := strconv.Itoa(stateIndexBase + stateIndexStep*i)
+			insName := name + "-" + stateIndex
+			var out bytes.Buffer
+			var stderr bytes.Buffer
+			cmd := exec.Command("kubectl", "delete", "deployment", insName)
+			cmd.Stdout = &out
+			cmd.Stderr = &stderr
+			if err := cmd.Run(); err != nil {
+				fmt.Println("[" + insName + "]:" + fmt.Sprint(err) + ": " + stderr.String())
+				continue
+			} else {
+				fmt.Println(insName + " has been deleted!")
+			}
+		}
+		return nil
+	} else if enable == 0 {
+		return nil
+	}
+
+	for i := 0; i < num; i++ {
+		port := strconv.Itoa(portBase + portStep*i)
+		stateIndex := strconv.Itoa(stateIndexBase + stateIndexStep*i)
+
+		yamlConfig := strings.Replace(yamlConfig_, "##APPNAME##", appName, -1)
+		yamlConfig = strings.Replace(yamlConfig, "##NAME##", name, -1)
+		yamlConfig = strings.Replace(yamlConfig, "##NUM##", strconv.Itoa(num), -1)
+		yamlConfig = strings.Replace(yamlConfig, "##PROTO##", proto2String(proto), -1)
+		yamlConfig = strings.Replace(yamlConfig, "##GRIDPROTO##", proto, -1)
+		yamlConfig = strings.Replace(yamlConfig, "##PORT##", port, -1)
+		yamlConfig = strings.Replace(yamlConfig, "##NODEIP##", nodeip, -1)
+		yamlConfig = strings.Replace(yamlConfig, "##STATEINDEX##", stateIndex, -1)
+		yamlConfig = strings.Replace(yamlConfig, "##RUNTIME##", runtime, -1)
+		if command != "" {
+			yamlConfig = strings.Replace(yamlConfig, "##COMMAND##", ", "+command, -1)
+		} else {
+			yamlConfig = strings.Replace(yamlConfig, "##COMMAND##", "", -1)
+		}
+
+		insName := name + "-" + stateIndex
+		filePath := io.CurDir() + "." + insName + ".yaml"
+		if err := io.SaveFile(filePath, yamlConfig); err != nil {
+			return err
+		}
+
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+
+		cmd := exec.Command("kubectl", "apply", "-f", "."+name+"-"+stateIndex+".yaml")
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
+			return err
+		}
+		io.DeleteFile(filePath)
+		fmt.Println(insName + " has been deployed!")
+	}
+	return nil
+}
+
+func deployDeployment(yamlConfig string, appName string, name string, enable int, num int, proto string, port string, public bool, nodeip string, runtime string, command string) error {
+	if enable < 0 {
 		var out bytes.Buffer
 		var stderr bytes.Buffer
 		cmd := exec.Command("kubectl", "delete", "deployment", name)
@@ -84,6 +187,8 @@ func deployDeployment(yamlConfig string, appName string, name string, num int, p
 		if public {
 			return deleteService(name)
 		}
+		return nil
+	} else if enable == 0 {
 		return nil
 	}
 
