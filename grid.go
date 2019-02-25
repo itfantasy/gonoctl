@@ -8,10 +8,10 @@ import (
 	"strconv"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/itfantasy/gonode/behaviors/gen_server"
-	"github.com/itfantasy/gonode/nets"
-	"github.com/itfantasy/gonode/utils/args"
-	"github.com/itfantasy/gonode/utils/ini"
+	//	"github.com/itfantasy/gonode/behaviors/gen_server"
+	//	"github.com/itfantasy/gonode/nets"
+	"github.com/itfantasy/grid/utils/args"
+	//	"github.com/itfantasy/gonode/utils/ini"
 )
 
 func main() {
@@ -63,7 +63,7 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 		GRID_NODE_NAME := os.Getenv("GRID_NODE_NAME")
 
 		this.nodeUrl = GRID_NODE_PROTO + "://" + GRID_NODE_IP + ":" + GRID_NODE_PORT
-		if GRID_NODE_PROTO == nets.WS {
+		if GRID_NODE_PROTO == "ws" {
 			this.nodeUrl += "/" + GRID_NODE_NAME
 		}
 
@@ -97,6 +97,7 @@ func (this *Grid) configParser() *args.ArgParser {
 	return parser
 }
 
+/*
 func (this *Grid) setupConfig() (*gen_server.NodeInfo, error) {
 	conf, err := ini.Load(this.proj + ".conf")
 	if err != nil {
@@ -126,6 +127,7 @@ func (this *Grid) setupConfig() (*gen_server.NodeInfo, error) {
 
 	return nodeInfo, nil
 }
+*/
 
 func (this *Grid) autoHotUpdate() error {
 	so, err := plugin.Open(this.proj + this.runtime)
@@ -154,15 +156,22 @@ func (this *Grid) autoRun() error {
 		return err2
 	}
 	this.printVersionInfo()
-	funcLaunch, err := so.Lookup("Launch")
+
+	//funcLaunch, err := so.Lookup("Launch")
+	funcLaunch, err := so.Lookup("OnLaunch")
 	if err != nil {
 		return err
 	}
-	config, err := this.setupConfig()
-	if err != nil {
-		return err
-	}
-	funcLaunch.(func(*gen_server.NodeInfo))(config)
+
+	/*
+		config, err := this.setupConfig()
+		if err != nil {
+			return err
+		}
+		funcLaunch.(func(*gen_server.NodeInfo))(config)
+	*/
+	funcLaunch.(func(string, string, string))(this.proj, this.nodeId, this.nodeUrl)
+
 	return nil
 }
 

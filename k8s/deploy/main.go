@@ -182,7 +182,7 @@ func deployDeployment(yamlConfig string, appName string, name string, enable int
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
 			fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
-			return err
+			return nil
 		}
 		if public {
 			return deleteService(name)
@@ -273,7 +273,7 @@ func deleteService(name string) error {
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
-		return err
+		return nil
 	}
 	return nil
 }

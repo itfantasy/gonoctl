@@ -2,10 +2,10 @@ appName: grid-cluster-demo
 cluster: 
   deployments:
   - name: grid-deployment
-    enable: 0
+    enable: -1
     num: 3
     proto: kcp
-    port: 8802
+    port: 30000
     public: true
     nodeip: 192.168.99.100
     runtime: /home/docker/runtime
@@ -13,7 +13,7 @@ cluster:
   statedeployments: 
   - name: grid-statedeploy
     enable: 1
-    num: 10
+    num: 3
     proto: kcp
     portBase: 30001
     portStep: 1
