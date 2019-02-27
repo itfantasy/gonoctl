@@ -9,6 +9,8 @@ import (
 
 	"github.com/itfantasy/gonode/utils/io"
 	"github.com/itfantasy/gonode/utils/yaml"
+
+	"github.com/itfantasy/grid/utils/args"
 )
 
 type clusterYaml struct {
@@ -43,15 +45,20 @@ type clusterYaml struct {
 }
 
 func run() error {
-	cluster, err := clusterConfigParser()
+	parser := args.Parser().
+		AddArg("f", ".cluster.yaml", "set the cluster config file")
+
+	file, _ := parser.Get("f")
+
+	cluster, err := clusterConfigParser(file)
 	if err != nil {
 		return err
 	}
 	return deployGridClusterForK8s(cluster)
 }
 
-func clusterConfigParser() (*clusterYaml, error) {
-	fileContent, err := io.LoadFile(io.CurDir() + ".cluster.yaml")
+func clusterConfigParser(file string) (*clusterYaml, error) {
+	fileContent, err := io.LoadFile(io.CurDir() + file)
 	if err != nil {
 		return nil, err
 	}

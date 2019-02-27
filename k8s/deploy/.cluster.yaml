@@ -12,7 +12,7 @@ cluster:
     command: ""
   statedeployments: 
   - name: grid-statedeploy
-    enable: 1
+    enable: -1
     num: 3
     proto: kcp
     portBase: 30001
