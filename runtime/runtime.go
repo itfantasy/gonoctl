@@ -23,26 +23,13 @@ func OnLaunch(proj string, nodeId string, nodeUrl string) {
 	}
 
 	nodeInfo := gen_server.NewNodeInfo()
-
-	if nodeId == "" {
-		nodeInfo.Id = conf.Get("node", "id")
-	} else {
-		nodeInfo.Id = nodeId
-	}
-	if nodeUrl == "" {
-		nodeInfo.Url = conf.Get("node", "url")
-	} else {
-		nodeInfo.Url = nodeUrl
-	}
-
-	nodeInfo.AutoDetect = conf.GetInt("node", "autodetect", 0) > 0
-	nodeInfo.Public = conf.GetInt("node", "public", 0) > 0
-
-	nodeInfo.RedUrl = conf.Get("redis", "url")
-	nodeInfo.RedPool = conf.GetInt("redis", "pool", 0)
-	nodeInfo.RedDB = conf.GetInt("redis", "db", 0)
-	nodeInfo.RedAuth = conf.Get("redis", "auth")
-
+	nodeInfo.Id = nodeId
+	nodeInfo.Url = nodeUrl
+	nodeInfo.PubUrl = nodeUrl
+	nodeInfo.BackEnds = conf.Get("node", "backends")
+	nodeInfo.LogLevel = conf.Get("log", "loglevel")
+	nodeInfo.LogComp = conf.Get("log", "logcomp")
+	nodeInfo.RegComp = conf.Get("reg", "regcomp")
 	Launch(nodeInfo)
 }
 
