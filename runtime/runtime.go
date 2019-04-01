@@ -14,7 +14,7 @@ func OnHotUpdate() {
 	gonode.Node().Bind(node)
 }
 
-func OnLaunch(proj string, nodeId string, nodeUrl string) {
+func OnLaunch(proj string, nodeId string, nodeUrl string, pubUrl string) {
 
 	conf, err := ini.Load(proj + ".conf")
 	if err != nil {
@@ -25,7 +25,7 @@ func OnLaunch(proj string, nodeId string, nodeUrl string) {
 	nodeInfo := gen_server.NewNodeInfo()
 	nodeInfo.Id = nodeId
 	nodeInfo.Url = nodeUrl
-	nodeInfo.PubUrl = nodeUrl
+	nodeInfo.PubUrl = pubUrl
 	nodeInfo.BackEnds = conf.Get("node", "backends")
 	nodeInfo.LogLevel = conf.Get("log", "loglevel")
 	nodeInfo.LogComp = conf.Get("log", "logcomp")

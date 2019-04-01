@@ -9,6 +9,8 @@ import (
 	"strconv"
 
 	"github.com/itfantasy/gonode/utils/args"
+	"github.com/itfantasy/gonode/utils/crypt"
+	"github.com/itfantasy/gonode/utils/ts"
 )
 
 func run() error {
@@ -28,7 +30,13 @@ func run() error {
 }
 
 func buildTheRunTime(projName string, ver int) error {
-	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", projName+"_"+strconv.Itoa(ver)+".so", "runtime.go", "node.go")
+
+	fileName := projName + "_" + strconv.Itoa(ver)
+	fileName += "_" + ts.NowToStr(ts.Now(), ts.FORMAT_NOW_C)
+	fileName += crypt.Md5("ITFANTASY-GRID-" + fileName)
+	fileName += ".so"
+
+	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", fileName, "runtime.go", "node.go")
 	fmt.Println(cmd.Args)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

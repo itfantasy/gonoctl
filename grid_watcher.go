@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/itfantasy/grid/utils/crypt"
 )
 
 // watch the target Directory
@@ -29,6 +30,7 @@ func (this *Grid) watchingDirectory() {
 						}
 						if ver > this.version {
 							this.version = ver
+							this.oldtime = this.runtime
 							this.runtime = ev.Name
 							if this.autoHotUpdate(); err != nil {
 								fmt.Println(err.Error())
@@ -63,16 +65,23 @@ func (this *Grid) isSoLibFile(fileName string) bool {
 func (this *Grid) getRunTimeInfo(fileName string) (int, error) {
 	infos := strings.Split(fileName, ".")
 	if len(infos) != 2 {
-		return 0, errors.New("illegal runtime file name! -1")
+		return -1, errors.New("illegal runtime file name! -1")
 	}
 	runtimeName := infos[0]
 	strs := strings.Split(runtimeName, "_")
-	if len(strs) != 2 {
-		return 0, errors.New("illegal runtime file name! -2")
+	if len(strs) != 4 {
+		return -1, errors.New("illegal runtime file name! -2")
 	}
 	ver, err := strconv.Atoi(strs[1])
 	if err != nil {
-		return 0, errors.New("illegal runtime file name! -3")
+		return -1, errors.New("illegal runtime file name! -3")
 	}
+	md5 := strs[3]
+	fileString := strs[0] + "_" + strs[1] + "_" + strs[2]
+	sign := crypt.Md5("ITFANTASY-GRID-" + fileString)
+	if md5 != sign {
+		return -1, errors.New("illegal sign code!")
+	}
+
 	return ver, nil
 }

@@ -1,14 +1,16 @@
 package main
 
 import (
-	//	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
 	"os/exec"
+	"strconv"
+	"strings"
 
-	"github.com/itfantasy/gonode/utils/args"
-	"github.com/itfantasy/gonode/utils/io"
+	"io/ioutil"
+
+	"github.com/itfantasy/grid/utils/args"
 )
 
 func run() error {
@@ -19,10 +21,9 @@ func run() error {
 func configParser() *args.ArgParser {
 	parser := args.Parser().
 		AddArg("d", "", "set the runtime dir that you will mount for the grid image").
-		AddArg("p", "", "the ports that you will expose for the grid image, of course which must be compatible with the grid config").
-		AddArg("l", "runtime_0.so", "set the latest runtime.so").
 		AddArg("i", "", "dynamic set the id of the node").
-		AddArg("u", "", "dynamic set the urls")
+		AddArg("l", "", "dynamic set the local url").
+		AddArg("p", "", "dynamic set the public url")
 	return parser
 }
 
@@ -33,29 +34,53 @@ func runGridDockerImage(parser *args.ArgParser) error {
 		return errors.New("the runtime dir (-d) is necessary!")
 	}
 
-	runtime, exist := parser.Get("l")
 	nodeid, exist := parser.Get("i")
-	nodeurl, exist := parser.Get("u")
-
-	gridCmd := "etc/grid/grid -d=/etc/grid/runtime -l=" + runtime
-	if nodeid != "" {
-		gridCmd += " -i=" + nodeid
+	if !exist || nodeid == "" {
+		return errors.New("the runtime nodeid (-i) is necessary!")
 	}
-	if nodeurl != "" {
-		gridCmd += " -u=" + nodeurl
+
+	nodeurl, exist := parser.Get("l")
+	if !exist || nodeurl == "" {
+		return errors.New("the runtime nodeurl (-l) is necessary!")
+	}
+
+	puburl, _ := parser.Get("p")
+
+	gridCmd := "etc/grid/grid -d=/etc/grid/runtime"
+	gridCmd += " -i=" + nodeid
+	gridCmd += " -l=" + nodeurl
+	if puburl != "" {
+		gridCmd += " -p=" + puburl
 	}
 
 	baseCmd := "docker run -v " + dir + ":/etc/grid/runtime "
-	ports, exist := parser.Get("p")
-	if exist && ports != "" {
-		baseCmd += "-p " + ports + " "
-	} else {
-		baseCmd += "-P "
-	}
-	baseCmd += " itfantasy/grid " + gridCmd
-	err := io.SaveFile(".sh", baseCmd)
+
+	port, udpOrNot, err := extractPort(nodeurl)
 	if err != nil {
 		return err
+	}
+	baseCmd += "-p " + port + ":" + port
+	if udpOrNot != "" {
+		baseCmd += "/" + udpOrNot
+	}
+	baseCmd += " "
+
+	if puburl != "" {
+		port, udpOrNot, err := extractPort(puburl)
+		if err != nil {
+			return err
+		}
+		baseCmd += "-p " + port + ":" + port
+		if udpOrNot != "" {
+			baseCmd += "/" + udpOrNot
+		}
+		baseCmd += " "
+	}
+
+	baseCmd += " itfantasy/grid " + gridCmd
+	err1 := ioutil.WriteFile(".sh", []byte(baseCmd), 0644)
+	if err1 != nil {
+		return err1
 	}
 	fmt.Println(baseCmd)
 
@@ -81,6 +106,30 @@ func runGridDockerImage(parser *args.ArgParser) error {
 	}
 
 	return nil
+}
+
+func extractPort(url string) (string, string, error) {
+	urlInfos := strings.Split(url, "://")
+	if len(urlInfos) != 2 {
+		return "", "", errors.New("illegal url!!" + url)
+	}
+	proto := urlInfos[0]
+	tempInfos := strings.Split(urlInfos[1], "/")
+	ipAndPort := strings.Split(tempInfos[0], ":")
+	if len(ipAndPort) != 2 {
+		return "", "", errors.New("illegal url!!" + url)
+	}
+	port, err := strconv.Atoi(ipAndPort[1])
+	if err != nil {
+		return "", "", errors.New("illegal port!!" + ipAndPort[1])
+	}
+
+	udpOrNot := ""
+	if proto == "kcp" {
+		udpOrNot = "udp"
+	}
+
+	return strconv.Itoa(port), udpOrNot, nil
 }
 
 func main() {

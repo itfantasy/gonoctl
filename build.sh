@@ -1,1 +1,1 @@
-go build -o grid grid.go grid_watcher.go
+go build -o grid grid.go grid_logger.go grid_watcher.go

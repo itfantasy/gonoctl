@@ -3,15 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"plugin"
 	"strconv"
+	"strings"
 
 	"github.com/fsnotify/fsnotify"
-	//	"github.com/itfantasy/gonode/behaviors/gen_server"
-	//	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/grid/utils/args"
-	//	"github.com/itfantasy/gonode/utils/ini"
 )
 
 func main() {
@@ -29,13 +28,18 @@ func main() {
 
 type Grid struct {
 	watcher *fsnotify.Watcher
+
 	proj    string
 	runtime string
+	oldtime string
+
 	version int
-	nodeId  string
-	nodeUrl string
 	vername string
 	verinfo string
+
+	nodeId  string
+	nodeUrl string
+	pubUrl  string
 }
 
 func NewGrid() *Grid {
@@ -48,32 +52,37 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 	if !exist {
 		return errors.New("(d) please set the target dir of the runtime!")
 	}
-	this.proj = proj + "/"
+	if !strings.HasSuffix(proj, "/") {
+		this.proj = proj + "/"
+	}
 
-	runtime, exist := parser.Get("l")
+	runtime, err := this.selectTheRuntime()
+	if err != nil {
+		return err
+	}
 	this.runtime = runtime
 
 	GRID_NODE_ID := os.Getenv("GRID_NODE_ID")
 	if GRID_NODE_ID != "" {
 		this.nodeId = GRID_NODE_ID
-
 		GRID_NODE_IP := os.Getenv("GRID_NODE_IP")
 		GRID_NODE_PORT := os.Getenv("GRID_NODE_PORT")
 		GRID_NODE_PROTO := os.Getenv("GRID_NODE_PROTO")
 		GRID_NODE_NAME := os.Getenv("GRID_NODE_NAME")
-
 		this.nodeUrl = GRID_NODE_PROTO + "://" + GRID_NODE_IP + ":" + GRID_NODE_PORT
 		if GRID_NODE_PROTO == "ws" {
 			this.nodeUrl += "/" + GRID_NODE_NAME
 		}
-
 	} else {
-		nodeId, _ := parser.Get("i")
-		this.nodeId = nodeId
-
-		nodeUrl, _ := parser.Get("u")
-		this.nodeUrl = nodeUrl
-
+		if nodeId, b := parser.Get("i"); b {
+			this.nodeId = nodeId
+		}
+		if nodeUrl, b := parser.Get("l"); b {
+			this.nodeUrl = nodeUrl
+		}
+		if pubUrl, b := parser.Get("p"); b {
+			this.pubUrl = pubUrl
+		}
 	}
 
 	watcher, err := fsnotify.NewWatcher()
@@ -90,44 +99,12 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 
 func (this *Grid) configParser() *args.ArgParser {
 	parser := args.Parser().
-		AddArg("d", "runtime", "set the target dir of the runtime").
-		AddArg("l", "runtime_0.so", "set the latest runtime.so").
+		AddArg("d", "", "set the target dir of the runtime").
 		AddArg("i", "", "dynamic set the id of the node").
-		AddArg("u", "", "dynamic set the urls")
+		AddArg("l", "", "dynamic set the local url").
+		AddArg("p", "", "dynamic set the public url")
 	return parser
 }
-
-/*
-func (this *Grid) setupConfig() (*gen_server.NodeInfo, error) {
-	conf, err := ini.Load(this.proj + ".conf")
-	if err != nil {
-		return nil, err
-	}
-
-	nodeInfo := gen_server.NewNodeInfo()
-
-	if this.nodeId == "" {
-		nodeInfo.Id = conf.Get("node", "id")
-	} else {
-		nodeInfo.Id = this.nodeId
-	}
-	if this.nodeUrl == "" {
-		nodeInfo.Url = conf.Get("node", "url")
-	} else {
-		nodeInfo.Url = this.nodeUrl
-	}
-
-	nodeInfo.AutoDetect = conf.GetInt("node", "autodetect", 0) > 0
-	nodeInfo.Public = conf.GetInt("node", "public", 0) > 0
-
-	nodeInfo.RedUrl = conf.Get("redis", "url")
-	nodeInfo.RedPool = conf.GetInt("redis", "pool", 0)
-	nodeInfo.RedDB = conf.GetInt("redis", "db", 0)
-	nodeInfo.RedAuth = conf.Get("redis", "auth")
-
-	return nodeInfo, nil
-}
-*/
 
 func (this *Grid) autoHotUpdate() error {
 	so, err := plugin.Open(this.proj + this.runtime)
@@ -141,6 +118,14 @@ func (this *Grid) autoHotUpdate() error {
 	funcUpdate, err := so.Lookup("OnHotUpdate")
 	if err != nil {
 		return err
+	}
+	err3 := this.addRuntimeLog("Update")
+	if err3 != nil {
+		fmt.Println("[RuntimeLog]::" + err3.Error())
+	}
+	err4 := this.mvOldRuntime()
+	if err4 != nil {
+		fmt.Println("[MvOldRuntime]::" + err4.Error())
 	}
 	funcUpdate.(func())()
 	return nil
@@ -157,20 +142,17 @@ func (this *Grid) autoRun() error {
 	}
 	this.printVersionInfo()
 
-	//funcLaunch, err := so.Lookup("Launch")
 	funcLaunch, err := so.Lookup("OnLaunch")
 	if err != nil {
 		return err
 	}
 
-	/*
-		config, err := this.setupConfig()
-		if err != nil {
-			return err
-		}
-		funcLaunch.(func(*gen_server.NodeInfo))(config)
-	*/
-	funcLaunch.(func(string, string, string))(this.proj, this.nodeId, this.nodeUrl)
+	err3 := this.addRuntimeLog("Launch")
+	if err3 != nil {
+		fmt.Println("[RuntimeLog]::" + err3.Error())
+	}
+
+	funcLaunch.(func(string, string, string, string))(this.proj, this.nodeId, this.nodeUrl, this.pubUrl)
 
 	return nil
 }
@@ -189,14 +171,36 @@ func (this *Grid) autoVersion(so *plugin.Plugin) error {
 	return nil
 }
 
-func (this *Grid) saveRuntimeName() error {
-	// save the runtimename to .runtime as a default name for next time
-	return nil
-}
-
-func (this Grid) printVersionInfo() {
+func (this *Grid) printVersionInfo() {
 	fmt.Println("--------" + this.runtime + "--------")
 	fmt.Println(" ver:	" + this.vername + "|" + strconv.Itoa(this.version))
 	fmt.Println(" info:	" + this.verinfo)
 	fmt.Println("----------------------------")
+}
+
+func (this *Grid) selectTheRuntime() (string, error) {
+	dir, err := ioutil.ReadDir(this.proj)
+	if err != nil {
+		return "", err
+	}
+	suffix := "so"
+	newVer := -1
+	newFile := ""
+	for _, fi := range dir {
+		if fi.IsDir() {
+			continue
+		}
+		fileName := fi.Name()
+		if strings.HasSuffix(fileName, suffix) {
+			if ver, err := this.getRunTimeInfo(fileName); err != nil {
+				if ver > newVer {
+					newFile = fileName
+				}
+			}
+		}
+	}
+	if newFile != "" {
+		return newFile, nil
+	}
+	return "", errors.New("the appropriate runtime was not found!!")
 }
