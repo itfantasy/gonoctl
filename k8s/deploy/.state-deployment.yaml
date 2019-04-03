@@ -28,16 +28,22 @@ spec:
         env:
         - name: GRID_NODE_ID
           value: ##NAME##-##STATEINDEX##
-        - name: GRID_NODE_IP
-          value: ##NODEIP##
-        - name: GRID_NODE_LABEL
+        - name: GRID_NODE_NAME
           value: ##NAME##
         - name: GRID_NODE_PORT
           value: "##PORT##"
         - name: GRID_NODE_PROTO
           value: ##GRIDPROTO##
-        - name: GRID_NODE_STATEINDEX
-          value: "##STATEINDEX##"
+        - name: GRID_NODE_ISPUB
+          value: "##ISPUB##"
+        - name: GRID_LOCAL_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: GRID_PUB_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
       volumes:
       - name: runtime-volume
         hostPath:

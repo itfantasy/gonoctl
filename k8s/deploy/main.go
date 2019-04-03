@@ -23,7 +23,6 @@ type clusterYaml struct {
 			Proto   string `yaml:"proto"`
 			Port    string `yaml:"port"`
 			Public  bool   `yaml:"public"`
-			NodeIP  string `yaml:"nodeip"`
 			Runtime string `yaml:"runtime"`
 			Command string `yaml:"command"`
 		}
@@ -37,7 +36,6 @@ type clusterYaml struct {
 			StateIndexBase int    `yaml:"stateIndexBase"`
 			StateIndexStep int    `yaml:"stateIndexStep"`
 			Public         bool   `yaml:"public"`
-			NodeIP         string `yaml:"nodeip"`
 			Runtime        string `yaml:"runtime"`
 			Command        string `yaml:"command"`
 		}
@@ -46,7 +44,7 @@ type clusterYaml struct {
 
 func run() error {
 	parser := args.Parser().
-		AddArg("f", ".cluster.yaml", "set the cluster config file")
+		AddArg("f", "grid-icloud.cluster", "set the cluster config file")
 
 	file, _ := parser.Get("f")
 
@@ -85,7 +83,6 @@ func deployGridClusterForK8s(cluster *clusterYaml) error {
 			deployment.Proto,
 			deployment.Port,
 			deployment.Public,
-			deployment.NodeIP,
 			deployment.Runtime,
 			deployment.Command); err != nil {
 			return err
@@ -108,7 +105,6 @@ func deployGridClusterForK8s(cluster *clusterYaml) error {
 			stateDeployment.StateIndexBase,
 			stateDeployment.StateIndexStep,
 			stateDeployment.Public,
-			stateDeployment.NodeIP,
 			stateDeployment.Runtime,
 			stateDeployment.Command); err != nil {
 			return err
@@ -117,7 +113,7 @@ func deployGridClusterForK8s(cluster *clusterYaml) error {
 	return nil
 }
 
-func deployStateDeployment(yamlConfig_ string, appName string, name string, enable int, num int, proto string, portBase int, portStep int, stateIndexBase int, stateIndexStep int, public bool, nodeip string, runtime string, command string) error {
+func deployStateDeployment(yamlConfig_ string, appName string, name string, enable int, num int, proto string, portBase int, portStep int, stateIndexBase int, stateIndexStep int, public bool, runtime string, command string) error {
 	if enable < 0 {
 		for i := 0; i < num; i++ {
 			stateIndex := strconv.Itoa(stateIndexBase + stateIndexStep*i)
@@ -149,7 +145,11 @@ func deployStateDeployment(yamlConfig_ string, appName string, name string, enab
 		yamlConfig = strings.Replace(yamlConfig, "##PROTO##", proto2String(proto), -1)
 		yamlConfig = strings.Replace(yamlConfig, "##GRIDPROTO##", proto, -1)
 		yamlConfig = strings.Replace(yamlConfig, "##PORT##", port, -1)
-		yamlConfig = strings.Replace(yamlConfig, "##NODEIP##", nodeip, -1)
+		if public {
+			yamlConfig = strings.Replace(yamlConfig, "##ISPUB##", "TRUE", -1)
+		} else {
+			yamlConfig = strings.Replace(yamlConfig, "##ISPUB##", "", -1)
+		}
 		yamlConfig = strings.Replace(yamlConfig, "##STATEINDEX##", stateIndex, -1)
 		yamlConfig = strings.Replace(yamlConfig, "##RUNTIME##", runtime, -1)
 		if command != "" {
@@ -180,7 +180,7 @@ func deployStateDeployment(yamlConfig_ string, appName string, name string, enab
 	return nil
 }
 
-func deployDeployment(yamlConfig string, appName string, name string, enable int, num int, proto string, port string, public bool, nodeip string, runtime string, command string) error {
+func deployDeployment(yamlConfig string, appName string, name string, enable int, num int, proto string, port string, public bool, runtime string, command string) error {
 	if enable < 0 {
 		var out bytes.Buffer
 		var stderr bytes.Buffer
@@ -206,6 +206,11 @@ func deployDeployment(yamlConfig string, appName string, name string, enable int
 	yamlConfig = strings.Replace(yamlConfig, "##GRIDPROTO##", proto, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##PORT##", port, -1)
 	yamlConfig = strings.Replace(yamlConfig, "##RUNTIME##", runtime, -1)
+	if public {
+		yamlConfig = strings.Replace(yamlConfig, "##ISPUB##", "TRUE", -1)
+	} else {
+		yamlConfig = strings.Replace(yamlConfig, "##ISPUB##", "", -1)
+	}
 	if command != "" {
 		yamlConfig = strings.Replace(yamlConfig, "##COMMAND##", ", "+command, -1)
 	} else {
@@ -230,7 +235,7 @@ func deployDeployment(yamlConfig string, appName string, name string, enable int
 	io.DeleteFile(filePath)
 
 	if public {
-		return deployService(appName, name, proto, port, nodeip)
+		return deployService(appName, name, proto, port)
 	}
 
 	return nil
@@ -238,7 +243,7 @@ func deployDeployment(yamlConfig string, appName string, name string, enable int
 
 var _yamlServiceConfig string = ""
 
-func deployService(appName string, name string, proto string, port string, nodeip string) error {
+func deployService(appName string, name string, proto string, port string) error {
 
 	yamlServiceConfig, err := io.LoadFile(io.CurDir() + ".service.yaml")
 	if err != nil {
@@ -249,7 +254,6 @@ func deployService(appName string, name string, proto string, port string, nodei
 	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##NAME##", name, -1)
 	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##PROTO##", proto2String(proto), -1)
 	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##PORT##", port, -1)
-	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##NODEIP##", nodeip, -1)
 	yamlServiceConfig = strings.Replace(yamlServiceConfig, "##NODEPORT##", port, -1)
 
 	filePath := io.CurDir() + "." + name + "-service.yaml"

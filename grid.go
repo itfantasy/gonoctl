@@ -62,18 +62,7 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 	}
 	this.runtime = runtime
 
-	GRID_NODE_ID := os.Getenv("GRID_NODE_ID")
-	if GRID_NODE_ID != "" {
-		this.nodeId = GRID_NODE_ID
-		GRID_NODE_IP := os.Getenv("GRID_NODE_IP")
-		GRID_NODE_PORT := os.Getenv("GRID_NODE_PORT")
-		GRID_NODE_PROTO := os.Getenv("GRID_NODE_PROTO")
-		GRID_NODE_NAME := os.Getenv("GRID_NODE_NAME")
-		this.nodeUrl = GRID_NODE_PROTO + "://" + GRID_NODE_IP + ":" + GRID_NODE_PORT
-		if GRID_NODE_PROTO == "ws" {
-			this.nodeUrl += "/" + GRID_NODE_NAME
-		}
-	} else {
+	if !this.tryK8sEvns() {
 		if nodeId, b := parser.Get("i"); b {
 			this.nodeId = nodeId
 		}
@@ -192,9 +181,17 @@ func (this *Grid) selectTheRuntime() (string, error) {
 		}
 		fileName := fi.Name()
 		if strings.HasSuffix(fileName, suffix) {
-			if ver, err := this.getRunTimeInfo(fileName); err != nil {
+			fmt.Println("found and checking ... " + fileName)
+			ver, err := this.getRunTimeInfo(fileName)
+			if err != nil {
+				fmt.Println(err.Error())
+			} else {
 				if ver > newVer {
 					newFile = fileName
+					newVer = ver
+					fmt.Println("a newer version: " + strconv.Itoa(newVer) + " ... " + fileName)
+				} else {
+					fmt.Println("old version: " + strconv.Itoa(ver) + " ... " + fileName)
 				}
 			}
 		}
@@ -203,4 +200,33 @@ func (this *Grid) selectTheRuntime() (string, error) {
 		return newFile, nil
 	}
 	return "", errors.New("the appropriate runtime was not found!!")
+}
+
+func (this *Grid) tryK8sEvns() bool {
+	GRID_NODE_ID := os.Getenv("GRID_NODE_ID")
+	if GRID_NODE_ID == "" {
+		return false
+	}
+
+	GRID_NODE_NAME := os.Getenv("GRID_NODE_NAME")
+	GRID_NODE_PORT := os.Getenv("GRID_NODE_PORT")
+	GRID_NODE_PROTO := os.Getenv("GRID_NODE_PROTO")
+	GRID_NODE_ISPUB := os.Getenv("GRID_NODE_ISPUB")
+	GRID_LOCAL_IP := os.Getenv("GRID_LOCAL_IP")
+	GRID_PUB_IP := os.Getenv("GRID_PUB_IP")
+
+	this.nodeId = GRID_NODE_ID
+	this.nodeUrl = GRID_NODE_PROTO + "://" + GRID_LOCAL_IP + ":" + GRID_NODE_PORT
+	if GRID_NODE_PROTO == "ws" {
+		this.nodeUrl += "/" + GRID_NODE_NAME
+	}
+	if GRID_NODE_ISPUB == "TRUE" {
+		this.pubUrl = GRID_NODE_PROTO + "://" + GRID_PUB_IP + ":" + GRID_NODE_PORT
+		if GRID_NODE_PROTO == "ws" {
+			this.pubUrl += "/" + GRID_NODE_NAME
+		}
+	} else {
+		this.pubUrl = ""
+	}
+	return true
 }

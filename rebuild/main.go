@@ -33,7 +33,7 @@ func buildTheRunTime(projName string, ver int) error {
 
 	fileName := projName + "_" + strconv.Itoa(ver)
 	fileName += "_" + ts.NowToStr(ts.Now(), ts.FORMAT_NOW_C)
-	fileName += crypt.Md5("ITFANTASY-GRID-" + fileName)
+	fileName += "_" + crypt.Md5("ITFANTASY-GRID-"+fileName)
 	fileName += ".so"
 
 	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", fileName, "runtime.go", "node.go")

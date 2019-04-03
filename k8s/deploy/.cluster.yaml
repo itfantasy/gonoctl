@@ -7,7 +7,6 @@ cluster:
     proto: kcp
     port: 30000
     public: true
-    nodeip: 192.168.99.100
     runtime: /home/docker/runtime
     command: ""
   statedeployments: 
@@ -20,6 +19,5 @@ cluster:
     stateIndexBase: 1
     stateIndexStep: 1
     public: true
-    nodeip: 192.168.99.100
     runtime: /home/docker/runtime
     command: ""
