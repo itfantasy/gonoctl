@@ -6,7 +6,7 @@ cluster:
     num: 3
     proto: kcp
     port: 30000
-    public: true
+    pub: 1
     runtime: /home/docker/runtime
     command: ""
   statedeployments: 
@@ -18,6 +18,6 @@ cluster:
     portStep: 1
     stateIndexBase: 1
     stateIndexStep: 1
-    public: true
+    pub: 1
     runtime: /home/docker/runtime
     command: ""

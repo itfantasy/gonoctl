@@ -26,7 +26,7 @@ func setupConfig() (*gen_server.NodeInfo, error) {
 
 	nodeInfo.Id = conf.Get("node", "id")
 	nodeInfo.Url = conf.Get("node", "url")
-	nodeInfo.PubUrl = conf.Get("node", "puburl")
+	nodeInfo.Pub = conf.GetInt("node", "pub", 0) > 0
 	nodeInfo.BackEnds = conf.Get("node", "backends")
 	nodeInfo.LogLevel = conf.Get("log", "loglevel")
 	nodeInfo.LogComp = conf.Get("log", "logcomp")

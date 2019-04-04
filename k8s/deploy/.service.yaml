@@ -8,6 +8,7 @@ spec:
   ports: 
   - port: ##NODEPORT##
     targetPort: ##PORT## 
+    nodePort: ##PORT## 
     protocol: ##PROTO## 
   selector: 
     tag: ##NAME##

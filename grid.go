@@ -39,7 +39,7 @@ type Grid struct {
 
 	nodeId  string
 	nodeUrl string
-	pubUrl  string
+	pub     bool
 }
 
 func NewGrid() *Grid {
@@ -69,8 +69,8 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 		if nodeUrl, b := parser.Get("l"); b {
 			this.nodeUrl = nodeUrl
 		}
-		if pubUrl, b := parser.Get("p"); b {
-			this.pubUrl = pubUrl
+		if pub, b := parser.Get("p"); b {
+			this.pub = (pub == "y" || pub == "Y")
 		}
 	}
 
@@ -91,7 +91,7 @@ func (this *Grid) configParser() *args.ArgParser {
 		AddArg("d", "", "set the target dir of the runtime").
 		AddArg("i", "", "dynamic set the id of the node").
 		AddArg("l", "", "dynamic set the local url").
-		AddArg("p", "", "dynamic set the public url")
+		AddArg("p", "n", "dynamic set if the node is public(n or y)")
 	return parser
 }
 
@@ -141,7 +141,7 @@ func (this *Grid) autoRun() error {
 		fmt.Println("[RuntimeLog]::" + err3.Error())
 	}
 
-	funcLaunch.(func(string, string, string, string))(this.proj, this.nodeId, this.nodeUrl, this.pubUrl)
+	funcLaunch.(func(string, string, string, bool))(this.proj, this.nodeId, this.nodeUrl, this.pub)
 
 	return nil
 }
@@ -213,7 +213,6 @@ func (this *Grid) tryK8sEvns() bool {
 	GRID_NODE_PROTO := os.Getenv("GRID_NODE_PROTO")
 	GRID_NODE_ISPUB := os.Getenv("GRID_NODE_ISPUB")
 	GRID_LOCAL_IP := os.Getenv("GRID_LOCAL_IP")
-	GRID_PUB_IP := os.Getenv("GRID_PUB_IP")
 
 	this.nodeId = GRID_NODE_ID
 	this.nodeUrl = GRID_NODE_PROTO + "://" + GRID_LOCAL_IP + ":" + GRID_NODE_PORT
@@ -221,12 +220,9 @@ func (this *Grid) tryK8sEvns() bool {
 		this.nodeUrl += "/" + GRID_NODE_NAME
 	}
 	if GRID_NODE_ISPUB == "TRUE" {
-		this.pubUrl = GRID_NODE_PROTO + "://" + GRID_PUB_IP + ":" + GRID_NODE_PORT
-		if GRID_NODE_PROTO == "ws" {
-			this.pubUrl += "/" + GRID_NODE_NAME
-		}
+		this.pub = true
 	} else {
-		this.pubUrl = ""
+		this.pub = false
 	}
 	return true
 }

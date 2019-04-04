@@ -23,7 +23,7 @@ func configParser() *args.ArgParser {
 		AddArg("d", "", "set the runtime dir that you will mount for the grid image").
 		AddArg("i", "", "dynamic set the id of the node").
 		AddArg("l", "", "dynamic set the local url").
-		AddArg("p", "", "dynamic set the public url")
+		AddArg("p", "n", "dynamic set if the node is public(n or y)")
 	return parser
 }
 
@@ -44,13 +44,13 @@ func runGridDockerImage(parser *args.ArgParser) error {
 		return errors.New("the runtime nodeurl (-l) is necessary!")
 	}
 
-	puburl, _ := parser.Get("p")
+	pub, _ := parser.Get("p")
 
 	gridCmd := "etc/grid/grid -d=/etc/grid/runtime"
 	gridCmd += " -i=" + nodeid
 	gridCmd += " -l=" + nodeurl
 	if puburl != "" {
-		gridCmd += " -p=" + puburl
+		gridCmd += " -p=" + pub
 	}
 
 	baseCmd := "docker run -v " + dir + ":/etc/grid/runtime "

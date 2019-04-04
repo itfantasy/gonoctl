@@ -39,10 +39,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        - name: GRID_PUB_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
       volumes:
       - name: runtime-volume
         hostPath:
