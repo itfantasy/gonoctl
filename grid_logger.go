@@ -36,7 +36,7 @@ func NewRuntimeLog() *RuntimeLog {
 func (this *Grid) addRuntimeLog(action string) error {
 	logFile := this.proj + "runtime_log.json"
 	rec := NewLogRecord()
-	exist, _ := this.fileExists(logFile)
+	exist := this.fileExists(logFile)
 	if exist {
 		bytes, err := ioutil.ReadFile(logFile)
 		if err != nil {
@@ -71,15 +71,15 @@ func (this *Grid) addRuntimeLog(action string) error {
 	return nil
 }
 
-func (this *Grid) fileExists(filePath string) (bool, error) {
+func (this *Grid) fileExists(filePath string) bool {
 	_, err := os.Stat(filePath)
 	if err == nil {
-		return true, nil
+		return true
 	}
 	if os.IsNotExist(err) {
-		return false, nil
+		return false
 	}
-	return false, err
+	return false
 }
 
 func (this *Grid) mvOldRuntime() error {
