@@ -11,7 +11,7 @@ import (
 var node *GridNode
 
 func OnHotUpdate() {
-	gonode.Node().Bind(node)
+	gonode.Bind(node)
 }
 
 func OnLaunch(proj string, nodeId string, nodeUrl string, pub bool) {
@@ -35,7 +35,8 @@ func OnLaunch(proj string, nodeId string, nodeUrl string, pub bool) {
 
 func Launch(nodeInfo *gen_server.NodeInfo) {
 	node = NewGridNode(nodeInfo)
-	gonode.Node().Initialize(node)
+	gonode.Launch(node)
+	gonode.Sync()
 }
 
 func VersionName() string {
