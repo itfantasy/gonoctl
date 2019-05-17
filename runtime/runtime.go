@@ -35,8 +35,8 @@ func OnLaunch(proj string, nodeId string, nodeUrl string, pub bool) {
 
 func Launch(nodeInfo *gen_server.NodeInfo) {
 	node = NewGridNode(nodeInfo)
-	gonode.Launch(node)
-	gonode.Sync()
+	gonode.Bind(node)
+	gonode.Launch()
 }
 
 func VersionName() string {
