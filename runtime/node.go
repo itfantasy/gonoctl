@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+
+	//	"github.com/golang/protobuf/proto"
 	"github.com/itfantasy/gonode"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 )
@@ -26,7 +29,8 @@ func (this *GridNode) OnConn(id string) {
 }
 func (this *GridNode) OnMsg(id string, msg []byte) {
 	gonode.Send(id, msg)
+
 }
 func (this *GridNode) OnClose(id string) {
-
+	fmt.Println("conn has been closed! " + id)
 }
