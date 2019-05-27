@@ -43,34 +43,34 @@ type Grid struct {
 }
 
 func NewGrid() *Grid {
-	this := new(Grid)
-	return this
+	g := new(Grid)
+	return g
 }
 
-func (this *Grid) initialize(parser *args.ArgParser) error {
+func (g *Grid) initialize(parser *args.ArgParser) error {
 	proj, exist := parser.Get("d")
 	if !exist {
 		return errors.New("(d) please set the target dir of the runtime!")
 	}
 	if !strings.HasSuffix(proj, "/") {
-		this.proj = proj + "/"
+		g.proj = proj + "/"
 	}
 
-	runtime, err := this.selectTheRuntime()
+	runtime, err := g.selectTheRuntime()
 	if err != nil {
 		return err
 	}
-	this.runtime = runtime
+	g.runtime = runtime
 
-	if !this.tryK8sEvns() {
+	if !g.tryK8sEvns() {
 		if nodeId, b := parser.Get("i"); b {
-			this.nodeId = nodeId
+			g.nodeId = nodeId
 		}
 		if nodeUrl, b := parser.Get("l"); b {
-			this.nodeUrl = nodeUrl
+			g.nodeUrl = nodeUrl
 		}
 		if pub, b := parser.Get("p"); b {
-			this.pub = (pub == "y" || pub == "Y")
+			g.pub = (pub == "y" || pub == "Y")
 		}
 	}
 
@@ -78,15 +78,15 @@ func (this *Grid) initialize(parser *args.ArgParser) error {
 	if err != nil {
 		return err
 	}
-	if watcher.Add(this.proj); err != nil {
+	if watcher.Add(g.proj); err != nil {
 		return err
 	}
-	this.watcher = watcher
+	g.watcher = watcher
 
 	return nil
 }
 
-func (this *Grid) configParser() *args.ArgParser {
+func (g *Grid) configParser() *args.ArgParser {
 	parser := args.Parser().
 		AddArg("d", "", "set the target dir of the runtime").
 		AddArg("i", "", "dynamic set the id of the node").
@@ -95,12 +95,12 @@ func (this *Grid) configParser() *args.ArgParser {
 	return parser
 }
 
-func (this *Grid) autoHotUpdate() error {
-	so, err := plugin.Open(this.proj + this.runtime)
+func (g *Grid) autoHotUpdate() error {
+	so, err := plugin.Open(g.proj + g.runtime)
 	if err != nil {
 		return err
 	}
-	err2 := this.autoVersion(so)
+	err2 := g.autoVersion(so)
 	if err2 != nil {
 		return err2
 	}
@@ -108,11 +108,11 @@ func (this *Grid) autoHotUpdate() error {
 	if err != nil {
 		return err
 	}
-	err3 := this.addRuntimeLog("Update")
+	err3 := g.addRuntimeLog("Update")
 	if err3 != nil {
 		fmt.Println("[RuntimeLog]::" + err3.Error())
 	}
-	err4 := this.mvOldRuntime()
+	err4 := g.mvOldRuntime()
 	if err4 != nil {
 		fmt.Println("[MvOldRuntime]::" + err4.Error())
 	}
@@ -120,55 +120,55 @@ func (this *Grid) autoHotUpdate() error {
 	return nil
 }
 
-func (this *Grid) autoRun() error {
-	so, err := plugin.Open(this.proj + this.runtime)
+func (g *Grid) autoRun() error {
+	so, err := plugin.Open(g.proj + g.runtime)
 	if err != nil {
 		return err
 	}
-	err2 := this.autoVersion(so)
+	err2 := g.autoVersion(so)
 	if err2 != nil {
 		return err2
 	}
-	this.printVersionInfo()
+	g.printVersionInfo()
 
 	funcLaunch, err := so.Lookup("OnLaunch")
 	if err != nil {
 		return err
 	}
 
-	err3 := this.addRuntimeLog("Launch")
+	err3 := g.addRuntimeLog("Launch")
 	if err3 != nil {
 		fmt.Println("[RuntimeLog]::" + err3.Error())
 	}
 
-	funcLaunch.(func(string, string, string, bool))(this.proj, this.nodeId, this.nodeUrl, this.pub)
+	funcLaunch.(func(string, string, string, bool))(g.proj, g.nodeId, g.nodeUrl, g.pub)
 
 	return nil
 }
 
-func (this *Grid) autoVersion(so *plugin.Plugin) error {
+func (g *Grid) autoVersion(so *plugin.Plugin) error {
 	funcVersionName, err := so.Lookup("VersionName")
 	if err != nil {
 		return err
 	}
-	this.vername = funcVersionName.(func() string)()
+	g.vername = funcVersionName.(func() string)()
 	funcVersionInfo, err := so.Lookup("VersionInfo")
 	if err != nil {
 		return err
 	}
-	this.verinfo = funcVersionInfo.(func() string)()
+	g.verinfo = funcVersionInfo.(func() string)()
 	return nil
 }
 
-func (this *Grid) printVersionInfo() {
-	fmt.Println("--------" + this.runtime + "--------")
-	fmt.Println(" ver:	" + this.vername + "|" + strconv.Itoa(this.version))
-	fmt.Println(" info:	" + this.verinfo)
+func (g *Grid) printVersionInfo() {
+	fmt.Println("--------" + g.runtime + "--------")
+	fmt.Println(" ver:	" + g.vername + "|" + strconv.Itoa(g.version))
+	fmt.Println(" info:	" + g.verinfo)
 	fmt.Println("----------------------------")
 }
 
-func (this *Grid) selectTheRuntime() (string, error) {
-	dir, err := ioutil.ReadDir(this.proj)
+func (g *Grid) selectTheRuntime() (string, error) {
+	dir, err := ioutil.ReadDir(g.proj)
 	if err != nil {
 		return "", err
 	}
@@ -182,7 +182,7 @@ func (this *Grid) selectTheRuntime() (string, error) {
 		fileName := fi.Name()
 		if strings.HasSuffix(fileName, suffix) {
 			fmt.Println("found and checking ... " + fileName)
-			ver, err := this.getRunTimeInfo(fileName)
+			ver, err := g.getRunTimeInfo(fileName)
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
@@ -202,7 +202,7 @@ func (this *Grid) selectTheRuntime() (string, error) {
 	return "", errors.New("the appropriate runtime was not found!!")
 }
 
-func (this *Grid) tryK8sEvns() bool {
+func (g *Grid) tryK8sEvns() bool {
 	GRID_NODE_ID := os.Getenv("GRID_NODE_ID")
 	if GRID_NODE_ID == "" {
 		return false
@@ -214,15 +214,15 @@ func (this *Grid) tryK8sEvns() bool {
 	GRID_NODE_ISPUB := os.Getenv("GRID_NODE_ISPUB")
 	GRID_LOCAL_IP := os.Getenv("GRID_LOCAL_IP")
 
-	this.nodeId = GRID_NODE_ID
-	this.nodeUrl = GRID_NODE_PROTO + "://" + GRID_LOCAL_IP + ":" + GRID_NODE_PORT
+	g.nodeId = GRID_NODE_ID
+	g.nodeUrl = GRID_NODE_PROTO + "://" + GRID_LOCAL_IP + ":" + GRID_NODE_PORT
 	if GRID_NODE_PROTO == "ws" {
-		this.nodeUrl += "/" + GRID_NODE_NAME
+		g.nodeUrl += "/" + GRID_NODE_NAME
 	}
 	if GRID_NODE_ISPUB == "TRUE" {
-		this.pub = true
+		g.pub = true
 	} else {
-		this.pub = false
+		g.pub = false
 	}
 	return true
 }

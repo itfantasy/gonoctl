@@ -13,24 +13,24 @@ type GridNode struct {
 }
 
 func NewGridNode(nodeInfo *gen_server.NodeInfo) *GridNode {
-	this := new(GridNode)
-	this.nodeInfo = nodeInfo
-	return this
+	g := new(GridNode)
+	g.nodeInfo = nodeInfo
+	return g
 }
 
-func (this *GridNode) Setup() *gen_server.NodeInfo {
-	return this.nodeInfo
+func (g *GridNode) Setup() *gen_server.NodeInfo {
+	return g.nodeInfo
 }
-func (this *GridNode) Start() {
+func (g *GridNode) Start() {
 
 }
-func (this *GridNode) OnConn(id string) {
+func (g *GridNode) OnConn(id string) {
 
 }
-func (this *GridNode) OnMsg(id string, msg []byte) {
+func (g *GridNode) OnMsg(id string, msg []byte) {
 	gonode.Send(id, msg)
 
 }
-func (this *GridNode) OnClose(id string) {
+func (g *GridNode) OnClose(id string) {
 	fmt.Println("conn has been closed! " + id)
 }

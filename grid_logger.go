@@ -23,20 +23,20 @@ type LogRecord struct {
 }
 
 func NewLogRecord() *LogRecord {
-	this := new(LogRecord)
-	this.Logs = make([]*RuntimeLog, 0, 0)
-	return this
+	g := new(LogRecord)
+	g.Logs = make([]*RuntimeLog, 0, 0)
+	return g
 }
 
 func NewRuntimeLog() *RuntimeLog {
-	this := new(RuntimeLog)
-	return this
+	g := new(RuntimeLog)
+	return g
 }
 
-func (this *Grid) addRuntimeLog(action string) error {
-	logFile := this.proj + "runtime_log.json"
+func (g *Grid) addRuntimeLog(action string) error {
+	logFile := g.proj + "runtime_log.json"
 	rec := NewLogRecord()
-	exist := this.fileExists(logFile)
+	exist := g.fileExists(logFile)
 	if exist {
 		bytes, err := ioutil.ReadFile(logFile)
 		if err != nil {
@@ -51,10 +51,10 @@ func (this *Grid) addRuntimeLog(action string) error {
 	newLog := NewRuntimeLog()
 	newLog.Date = ts.NowToStr(ts.Now(), ts.FORMAT_NOW_A)
 	newLog.Action = action
-	newLog.Runtime = this.runtime
-	newLog.VerName = this.vername
-	newLog.Version = this.version
-	newLog.VerInfo = this.verinfo
+	newLog.Runtime = g.runtime
+	newLog.VerName = g.vername
+	newLog.Version = g.version
+	newLog.VerInfo = g.verinfo
 
 	rec.Logs = append(rec.Logs, newLog)
 
@@ -71,7 +71,7 @@ func (this *Grid) addRuntimeLog(action string) error {
 	return nil
 }
 
-func (this *Grid) fileExists(filePath string) bool {
+func (g *Grid) fileExists(filePath string) bool {
 	_, err := os.Stat(filePath)
 	if err == nil {
 		return true
@@ -82,12 +82,12 @@ func (this *Grid) fileExists(filePath string) bool {
 	return false
 }
 
-func (this *Grid) mvOldRuntime() error {
-	err := os.MkdirAll(this.proj+"backoff/", os.ModePerm)
+func (g *Grid) mvOldRuntime() error {
+	err := os.MkdirAll(g.proj+"backoff/", os.ModePerm)
 	if err != nil {
 		return err
 	}
-	err2 := os.Rename(this.proj+this.oldtime, this.proj+"backoff/"+this.oldtime)
+	err2 := os.Rename(g.proj+g.oldtime, g.proj+"backoff/"+g.oldtime)
 	if err2 != nil {
 		return err2
 	}
