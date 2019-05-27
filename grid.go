@@ -23,7 +23,16 @@ func main() {
 	if err := grid.autoRun(); err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("finished!!")
+	fmt.Println(`
+  ________      .__    .___
+ /  _____/______|__| __| _/
+/   \  __\_  __ \  |/ __ | 
+\    \_\  \  | \/  / /_/ | 
+ \______  /__|  |__\____ | 
+        \/              \/  
+:: An Addtional Light Engine for gonode to support Docker, Hotupdating and so on. ::
+
+`)
 }
 
 type Grid struct {
