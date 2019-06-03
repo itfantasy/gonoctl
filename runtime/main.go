@@ -31,6 +31,8 @@ func setupConfig() (*gen_server.NodeInfo, error) {
 	nodeInfo.LogLevel = conf.Get("log", "loglevel")
 	nodeInfo.LogComp = conf.Get("log", "logcomp")
 	nodeInfo.RegComp = conf.Get("reg", "regcomp")
+	nodeInfo.RepComp = conf.Get("report", "repcomp")
+	nodeInfo.RepTo = conf.Get("report", "repto")
 
 	return nodeInfo, nil
 }

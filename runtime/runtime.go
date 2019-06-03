@@ -30,6 +30,9 @@ func OnLaunch(proj string, nodeId string, nodeUrl string, pub bool) {
 	nodeInfo.LogLevel = conf.Get("log", "loglevel")
 	nodeInfo.LogComp = conf.Get("log", "logcomp")
 	nodeInfo.RegComp = conf.Get("reg", "regcomp")
+	nodeInfo.RepComp = conf.Get("report", "repcomp")
+	nodeInfo.RepTo = conf.Get("report", "repto")
+
 	Launch(nodeInfo)
 }
 
