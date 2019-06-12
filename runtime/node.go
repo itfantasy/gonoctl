@@ -31,6 +31,6 @@ func (g *GridNode) OnMsg(id string, msg []byte) {
 	gonode.Send(id, msg)
 
 }
-func (g *GridNode) OnClose(id string) {
+func (g *GridNode) OnClose(id string, reason error) {
 	fmt.Println("conn has been closed! " + id)
 }
