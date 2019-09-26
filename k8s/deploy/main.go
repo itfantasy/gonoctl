@@ -61,7 +61,7 @@ func clusterConfigParser(file string) (*clusterYaml, error) {
 		return nil, err
 	}
 	cluster := new(clusterYaml)
-	if yaml.Decode(fileContent, cluster); err != nil {
+	if yaml.Unmarshal(fileContent, cluster); err != nil {
 		return nil, err
 	}
 	yaml.Println(cluster)
