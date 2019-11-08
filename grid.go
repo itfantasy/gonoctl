@@ -30,7 +30,7 @@ func main() {
 \    \_\  \  | \/  / /_/ | 
  \______  /__|  |__\____ | 
         \/              \/  
-:: An Addtional Light Engine for gonode to support Docker, Hotupdating and so on. ::
+:: Grid is An Addtional Light Engine for gonode to support Docker, K8s, Hotupdating and so on. ::
 
 `)
 }
