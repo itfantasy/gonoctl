@@ -11,35 +11,32 @@ spec:
         app: ##APPNAME##
         engine: itfantasy-grid
         tag: ##NAME##
+        namespace: ##NAMESPACE##
         stateIndex: "##STATEINDEX##"
     spec:
       hostNetwork: true
       containers:
       - name: ##NAME##-instance
         image: itfantasy/grid
-        command: ["etc/grid/grid", "-d=/etc/grid/runtime"##COMMAND##]
+        command: ["etc/grid/grid-core", "-d=/etc/grid/runtime"##COMMAND##]
         volumeMounts:
         - name: runtime-volume
           mountPath: /etc/grid/runtime
         ports:
-        - containerPort: ##PORT##
-          hostPort: ##PORT##
-          protocol: ##PROTO##
+##POINTS##
         env:
         - name: GRID_NODE_ID
           value: ##NAME##-##STATEINDEX##
         - name: GRID_NODE_NAME
           value: ##NAME##
-        - name: GRID_NODE_PORT
-          value: "##PORT##"
-        - name: GRID_NODE_PROTO
-          value: ##GRIDPROTO##
-        - name: GRID_NODE_ISPUB
-          value: "##ISPUB##"
+        - name: GRID_NODE_ENDPOINTS
+          value: ##ENDPOINTS##
         - name: GRID_LOCAL_IP
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: GRID_NODE_NAMESPACE
+          value: ##NAMESPACE##
       volumes:
       - name: runtime-volume
         hostPath:

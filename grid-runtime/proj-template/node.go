@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	//	"github.com/golang/protobuf/proto"
 	"github.com/itfantasy/gonode"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 )

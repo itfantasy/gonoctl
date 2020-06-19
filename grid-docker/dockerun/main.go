@@ -2,13 +2,13 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"strconv"
 	"strings"
-
-	"io/ioutil"
 
 	"github.com/itfantasy/grid/utils/args"
 )
@@ -20,53 +20,48 @@ func run() error {
 
 func configParser() *args.ArgParser {
 	parser := args.Parser().
-		AddArg("d", "", "set the runtime dir that you will mount for the grid image").
-		AddArg("i", "", "dynamic set the id of the node").
-		AddArg("l", "", "dynamic set the local url").
-		AddArg("p", "n", "dynamic set if the node is public(n or y)")
+		AddArg("proj", "aa", "the project dir which will mount for grid").
+		AddArg("namespace", "", "set the namespace, such as 'itfantasy'").
+		AddArg("nodeid", "", "set the nodeid, such as 'game_1024'").
+		AddArg("endpoints", "", "set the endpoint list, such as 'tcp://yourserver:30005,kcp://yourserver:30006,ws://yourserver:30007/game_1024'").
+		AddArg("etc", "", "extra configs")
 	return parser
 }
 
 func runGridDockerImage(parser *args.ArgParser) error {
 
-	dir, exist := parser.Get("d")
-	if !exist || dir == "" {
-		return errors.New("the runtime dir (-d) is necessary!")
+	proj, exist := parser.Get("proj")
+	if !exist || proj == "" {
+		return errors.New("project dir (-proj) is necessary!")
 	}
 
-	nodeid, exist := parser.Get("i")
+	nodeid, exist := parser.Get("nodeid")
 	if !exist || nodeid == "" {
-		return errors.New("the runtime nodeid (-i) is necessary!")
+		return errors.New("nodeid (-nodeid) is necessary!")
 	}
 
-	nodeurl, exist := parser.Get("l")
-	if !exist || nodeurl == "" {
-		return errors.New("the runtime nodeurl (-l) is necessary!")
+	endpoints, exist := parser.Get("endpoints")
+	if !exist || endpoints == "" {
+		return errors.New("endpoint list (-endpoints) is necessary!")
 	}
 
-	pub, _ := parser.Get("p")
+	namespace, _ := parser.Get("namespace")
+	etc, _ := parser.Get("etc")
 
-	gridCmd := "etc/grid/grid -d=/etc/grid/runtime"
-	gridCmd += " -i=" + nodeid
-	gridCmd += " -l=" + nodeurl
-	if puburl != "" {
-		gridCmd += " -p=" + pub
+	gridCmd := "etc/grid/grid-core -proj=/etc/grid/runtime"
+	gridCmd += " -nodeid=" + nodeid
+	gridCmd += " -endpoints=" + endpoints
+	if namespace != "" {
+		gridCmd += " -namespace=" + namespace
+	}
+	if etc != "" {
+		gridCmd += " -etc=" + etc
 	}
 
-	baseCmd := "docker run -v " + dir + ":/etc/grid/runtime "
-
-	port, udpOrNot, err := extractPort(nodeurl)
-	if err != nil {
-		return err
-	}
-	baseCmd += "-p " + port + ":" + port
-	if udpOrNot != "" {
-		baseCmd += "/" + udpOrNot
-	}
-	baseCmd += " "
-
-	if puburl != "" {
-		port, udpOrNot, err := extractPort(puburl)
+	baseCmd := "docker run -v " + proj + ":/etc/grid/runtime "
+	var endpointList []string = strings.Split(endpoints, ",")
+	for _, endpoint := range endpointList {
+		port, udpOrNot, err := extractPort(endpoint)
 		if err != nil {
 			return err
 		}
@@ -78,9 +73,8 @@ func runGridDockerImage(parser *args.ArgParser) error {
 	}
 
 	baseCmd += " itfantasy/grid " + gridCmd
-	err1 := ioutil.WriteFile(".sh", []byte(baseCmd), 0644)
-	if err1 != nil {
-		return err1
+	if err := ioutil.WriteFile(".sh", []byte(baseCmd), 0644); err != nil {
+		return err
 	}
 	fmt.Println(baseCmd)
 
@@ -90,21 +84,18 @@ func runGridDockerImage(parser *args.ArgParser) error {
 	cmd := exec.Command("chmod", "777", ".sh")
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-	err2 := cmd.Run()
-	if err2 != nil {
+	if err := cmd.Run(); err != nil {
 		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
-		return err2
+		return err
 	}
 
 	cmd2 := exec.Command("bash", "./.sh")
 	cmd2.Stdout = &out
 	cmd2.Stderr = &stderr
-	err3 := cmd2.Run()
-	if err3 != nil {
+	if err := cmd2.Run(); err != nil {
 		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
-		return err3
+		return err
 	}
-
 	return nil
 }
 

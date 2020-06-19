@@ -6,9 +6,6 @@ spec:
   type: NodePort
   sessionAffinity: ClientIP
   ports: 
-  - port: ##NODEPORT##
-    targetPort: ##PORT## 
-    nodePort: ##PORT## 
-    protocol: ##PROTO## 
+##PORTS##
   selector: 
     tag: ##NAME##

@@ -1,0 +1,24 @@
+appname: grid-cluster-demo
+cluster: 
+  namespace: itfantasy
+  deployments:
+  - name: game
+    num: 3
+    endpoints:
+    - tcp://:30005
+    - kcp://:30006
+    - ws://:300010/game
+    runtime: /home/docker/runtime
+    command: ""
+	enable: 1
+  statedeployments: 
+  - name: statesvc
+    num: 3
+    startindex: 1
+    endpoints:
+    - tcp://:301xx
+    - kcp://:302xx
+    - ws://:303xx/statesvc
+    runtime: /home/docker/runtime
+    command: ""
+	enable: 1

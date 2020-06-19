@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -46,20 +47,22 @@ type Grid struct {
 	vername string
 	verinfo string
 
-	nodeId  string
-	nodeUrl string
-	pub     bool
+	namespace string
+	nodeid    string
+	endpoints []string
+	etc       string
 }
 
 func NewGrid() *Grid {
 	g := new(Grid)
+	g.endpoints = make([]string, 0, 1)
 	return g
 }
 
 func (g *Grid) initialize(parser *args.ArgParser) error {
-	proj, exist := parser.Get("d")
+	proj, exist := parser.Get("proj")
 	if !exist {
-		return errors.New("(d) please set the target dir of the runtime!")
+		return errors.New("project dir (-proj) is necessary!")
 	}
 	if !strings.HasSuffix(proj, "/") {
 		g.proj = proj + "/"
@@ -71,16 +74,32 @@ func (g *Grid) initialize(parser *args.ArgParser) error {
 	}
 	g.runtime = runtime
 
-	if !g.tryK8sEvns() {
-		if nodeId, b := parser.Get("i"); b {
-			g.nodeId = nodeId
+	k8sEvn, err := g.tryK8sEvns()
+	if err != nil {
+		return err
+	}
+
+	if !k8sEvn {
+		if namespace, b := parser.Get("namespace"); b {
+			g.namespace = namespace
 		}
-		if nodeUrl, b := parser.Get("l"); b {
-			g.nodeUrl = nodeUrl
+		if nodeid, b := parser.Get("nodeid"); b {
+			g.nodeid = nodeid
 		}
-		if pub, b := parser.Get("p"); b {
-			g.pub = (pub == "y" || pub == "Y")
+		if endpoints, b := parser.Get("endpoints"); b {
+			g.endpoints = strings.Split(endpoints, ",")
 		}
+		if etc, b := parser.Get("etc"); b {
+			g.etc = etc
+		}
+	}
+
+	if g.nodeid == "" {
+		return errors.New("nodeid (-nodeid) is necessary!")
+	}
+
+	if len(g.endpoints) <= 0 {
+		return errors.New("endpoint list (-endpoints) is necessary!")
 	}
 
 	watcher, err := fsnotify.NewWatcher()
@@ -97,10 +116,11 @@ func (g *Grid) initialize(parser *args.ArgParser) error {
 
 func (g *Grid) configParser() *args.ArgParser {
 	parser := args.Parser().
-		AddArg("d", "", "set the target dir of the runtime").
-		AddArg("i", "", "dynamic set the id of the node").
-		AddArg("l", "", "dynamic set the local url").
-		AddArg("p", "n", "dynamic set if the node is public(n or y)")
+		AddArg("proj", "", "the project dir which will mount for grid").
+		AddArg("namespace", "", "set the namespace, such as 'itfantasy'").
+		AddArg("nodeid", "", "set the nodeid, such as 'game_1024'").
+		AddArg("endpoints", "", "set the endpoint list, such as 'tcp://yourserver:30005,kcp://yourserver:30006,ws://yourserver:30007/game_1024'").
+		AddArg("etc", "", "extra configs")
 	return parser
 }
 
@@ -109,21 +129,12 @@ func (g *Grid) autoHotUpdate() error {
 	if err != nil {
 		return err
 	}
-	err2 := g.autoVersion(so)
-	if err2 != nil {
-		return err2
+	if err := g.autoVersion(so); err != nil {
+		return err
 	}
 	funcUpdate, err := so.Lookup("OnHotUpdate")
 	if err != nil {
 		return err
-	}
-	err3 := g.addRuntimeLog("Update")
-	if err3 != nil {
-		fmt.Println("[RuntimeLog]::" + err3.Error())
-	}
-	err4 := g.mvOldRuntime()
-	if err4 != nil {
-		fmt.Println("[MvOldRuntime]::" + err4.Error())
 	}
 	funcUpdate.(func())()
 	return nil
@@ -134,24 +145,15 @@ func (g *Grid) autoRun() error {
 	if err != nil {
 		return err
 	}
-	err2 := g.autoVersion(so)
-	if err2 != nil {
-		return err2
+	if err := g.autoVersion(so); err != nil {
+		return err
 	}
 	g.printVersionInfo()
-
 	funcLaunch, err := so.Lookup("OnLaunch")
 	if err != nil {
 		return err
 	}
-
-	err3 := g.addRuntimeLog("Launch")
-	if err3 != nil {
-		fmt.Println("[RuntimeLog]::" + err3.Error())
-	}
-
-	funcLaunch.(func(string, string, string, bool))(g.proj, g.nodeId, g.nodeUrl, g.pub)
-
+	funcLaunch.(func(string, string, string, []string, string))(g.proj, g.namespace, g.nodeid, g.endpoints, g.etc)
 	return nil
 }
 
@@ -177,61 +179,59 @@ func (g *Grid) printVersionInfo() {
 }
 
 func (g *Grid) selectTheRuntime() (string, error) {
+	lstTime := 0
+	lstFile := ""
 	dir, err := ioutil.ReadDir(g.proj)
 	if err != nil {
 		return "", err
 	}
-	suffix := "so"
-	newVer := -1
-	newFile := ""
 	for _, fi := range dir {
 		if fi.IsDir() {
 			continue
 		}
 		fileName := fi.Name()
-		if strings.HasSuffix(fileName, suffix) {
+		if g.isSoLibFile(fileName) {
 			fmt.Println("found and checking ... " + fileName)
-			ver, err := g.getRunTimeInfo(fileName)
-			if err != nil {
-				fmt.Println(err.Error())
-			} else {
-				if ver > newVer {
-					newFile = fileName
-					newVer = ver
-					fmt.Println("a newer version: " + strconv.Itoa(newVer) + " ... " + fileName)
-				} else {
-					fmt.Println("old version: " + strconv.Itoa(ver) + " ... " + fileName)
+			infos := strings.Split(strings.TrimSuffix(fileName, ".so"), "_")
+			if len(infos) == 2 {
+				if time, err := strconv.Atoi(infos[1]); err == nil {
+					if time > lstTime {
+						lstTime = time
+						lstFile = fileName
+					}
 				}
 			}
 		}
 	}
-	if newFile != "" {
-		return newFile, nil
+	if lstFile != "" {
+		return lstFile, nil
 	}
 	return "", errors.New("the appropriate runtime was not found!!")
 }
 
-func (g *Grid) tryK8sEvns() bool {
+func (g *Grid) tryK8sEvns() (bool, error) {
 	GRID_NODE_ID := os.Getenv("GRID_NODE_ID")
 	if GRID_NODE_ID == "" {
-		return false
+		return false, nil
 	}
-
-	GRID_NODE_NAME := os.Getenv("GRID_NODE_NAME")
-	GRID_NODE_PORT := os.Getenv("GRID_NODE_PORT")
-	GRID_NODE_PROTO := os.Getenv("GRID_NODE_PROTO")
-	GRID_NODE_ISPUB := os.Getenv("GRID_NODE_ISPUB")
+	GRID_NODE_NAMESPACE := os.Getenv("GRID_NODE_NAMESPACE")
+	GRID_NODE_ENDPOINTS := os.Getenv("GRID_NODE_ENDPOINTS")
 	GRID_LOCAL_IP := os.Getenv("GRID_LOCAL_IP")
 
-	g.nodeId = GRID_NODE_ID
-	g.nodeUrl = GRID_NODE_PROTO + "://" + GRID_LOCAL_IP + ":" + GRID_NODE_PORT
-	if GRID_NODE_PROTO == "ws" {
-		g.nodeUrl += "/" + GRID_NODE_NAME
+	g.nodeid = GRID_NODE_ID
+	g.namespace = GRID_NODE_NAMESPACE
+
+	endpoints := make([]string, 0, 1)
+	if err := json.Unmarshal([]byte(GRID_NODE_ENDPOINTS), endpoints); err != nil {
+		return false, err
 	}
-	if GRID_NODE_ISPUB == "TRUE" {
-		g.pub = true
-	} else {
-		g.pub = false
+	for _, endpoint := range endpoints {
+		infos := strings.Split(endpoint, "://:")
+		if len(infos) < 2 {
+			return false, errors.New("illegal endpoints!!")
+		}
+		g.endpoints = append(g.endpoints, infos[0]+"://"+GRID_LOCAL_IP+":"+infos[1])
 	}
-	return true
+
+	return true, nil
 }
