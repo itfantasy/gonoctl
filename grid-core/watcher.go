@@ -27,7 +27,6 @@ func (g *Grid) watchingDirectory() {
 						}
 						fmt.Println("[watcher]::an new version : " + ev.Name + " has been loaded !")
 						g.printVersionInfo()
-
 					}
 				}
 			}

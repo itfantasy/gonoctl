@@ -15,15 +15,6 @@ import (
 )
 
 func main() {
-	grid := NewGrid()
-	parser := grid.configParser()
-	if err := grid.initialize(parser); err != nil {
-		fmt.Println(err)
-	}
-	go grid.watchingDirectory()
-	if err := grid.autoRun(); err != nil {
-		fmt.Println(err)
-	}
 	fmt.Println(`
   ________      .__    .___
  /  _____/______|__| __| _/
@@ -34,6 +25,16 @@ func main() {
 :: Grid is An Addtional Light Engine for gonode to support Docker, K8s, Hotupdating and so on. ::
 
 `)
+	grid := NewGrid()
+	parser := grid.configParser()
+	if err := grid.initialize(parser); err != nil {
+		fmt.Println(err)
+	}
+	go grid.watchingDirectory()
+	if err := grid.autoRun(); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("==========================================================")
 }
 
 type Grid struct {
@@ -172,10 +173,15 @@ func (g *Grid) autoVersion(so *plugin.Plugin) error {
 }
 
 func (g *Grid) printVersionInfo() {
+	infos := strings.Split(g.runtime, "_")
+	fmt.Println("")
 	fmt.Println("--------" + g.runtime + "--------")
+	fmt.Println(" proj:	" + infos[0])
+	fmt.Println(" date:	" + infos[1])
 	fmt.Println(" ver:	" + g.vername + "|" + strconv.Itoa(g.version))
 	fmt.Println(" info:	" + g.verinfo)
-	fmt.Println("----------------------------")
+	fmt.Println("------------------------------------------------")
+	fmt.Println("")
 }
 
 func (g *Grid) selectTheRuntime() (string, error) {
