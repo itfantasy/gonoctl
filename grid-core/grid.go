@@ -29,6 +29,7 @@ func main() {
 	parser := grid.configParser()
 	if err := grid.initialize(parser); err != nil {
 		fmt.Println(err)
+		return
 	}
 	go grid.watchingDirectory()
 	if err := grid.autoRun(); err != nil {
@@ -84,10 +85,10 @@ func (g *Grid) initialize(parser *args.ArgParser) error {
 		if namespace, b := parser.Get("namespace"); b {
 			g.namespace = namespace
 		}
-		if nodeid, b := parser.Get("nodeid"); b {
+		if nodeid, b := parser.Get("nodeid"); b && nodeid != "" {
 			g.nodeid = nodeid
 		}
-		if endpoints, b := parser.Get("endpoints"); b {
+		if endpoints, b := parser.Get("endpoints"); b && endpoints != "" {
 			g.endpoints = strings.Split(endpoints, ",")
 		}
 		if etc, b := parser.Get("etc"); b {
