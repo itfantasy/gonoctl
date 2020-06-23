@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -18,14 +19,18 @@ func (g *Grid) watchingDirectory() {
 		case ev := <-g.watcher.Events:
 			{
 				if ev.Op&fsnotify.Create == fsnotify.Create {
-					if g.isSoLibFile(ev.Name) {
-						fmt.Println("[watcher]::find a new runtime : ", ev.Name)
-						g.runtime = ev.Name
+					wholePath := ev.Name
+					infos := strings.Split(wholePath, "/")
+					soName := infos[len(infos)-1]
+					if g.isSoLibFile(soName) {
+						fmt.Println("[watcher]::find a new runtime : ", soName)
+						g.runtime = soName
+						<-time.After(time.Millisecond * time.Duration(3000))
 						if err := g.autoHotUpdate(); err != nil {
 							fmt.Println(err.Error())
 							continue
 						}
-						fmt.Println("[watcher]::an new version : " + ev.Name + " has been loaded !")
+						fmt.Println("[watcher]::an new version : " + soName + " has been loaded !")
 						g.printVersionInfo()
 					}
 				}

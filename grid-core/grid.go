@@ -32,7 +32,7 @@ func main() {
 		return
 	}
 	go grid.watchingDirectory()
-	if err := grid.autoRun(); err != nil {
+	if err := grid.autoLaunch(); err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println("==========================================================")
@@ -131,7 +131,7 @@ func (g *Grid) autoHotUpdate() error {
 	if err != nil {
 		return err
 	}
-	if err := g.autoVersion(so); err != nil {
+	if err := g.getVersionInfo(so); err != nil {
 		return err
 	}
 	funcUpdate, err := so.Lookup("OnHotUpdate")
@@ -142,12 +142,12 @@ func (g *Grid) autoHotUpdate() error {
 	return nil
 }
 
-func (g *Grid) autoRun() error {
+func (g *Grid) autoLaunch() error {
 	so, err := plugin.Open(g.proj + g.runtime)
 	if err != nil {
 		return err
 	}
-	if err := g.autoVersion(so); err != nil {
+	if err := g.getVersionInfo(so); err != nil {
 		return err
 	}
 	g.printVersionInfo()
@@ -159,7 +159,7 @@ func (g *Grid) autoRun() error {
 	return nil
 }
 
-func (g *Grid) autoVersion(so *plugin.Plugin) error {
+func (g *Grid) getVersionInfo(so *plugin.Plugin) error {
 	funcVersionName, err := so.Lookup("VersionName")
 	if err != nil {
 		return err

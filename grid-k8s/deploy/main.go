@@ -15,7 +15,7 @@ import (
 
 func run() error {
 	parser := args.Parser().
-		AddArg("f", ".cluster", "set the cluster config file")
+		AddArg("f", ".cluster.yaml", "set the cluster config file")
 	file, _ := parser.Get("f")
 	cluster, err := clusterConfigParser(file)
 	if err != nil {
