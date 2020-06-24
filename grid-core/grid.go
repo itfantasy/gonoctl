@@ -147,6 +147,8 @@ func (g *Grid) autoLaunch() error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("")
+	fmt.Println("[grid-core]:: " + g.runtime + " has been loaded !")
 	if err := g.getVersionInfo(so); err != nil {
 		return err
 	}
@@ -165,6 +167,11 @@ func (g *Grid) getVersionInfo(so *plugin.Plugin) error {
 		return err
 	}
 	g.vername = funcVersionName.(func() string)()
+	funcVersionCode, err := so.Lookup("VersionCode")
+	if err != nil {
+		return err
+	}
+	g.version = funcVersionCode.(func() int)()
 	funcVersionInfo, err := so.Lookup("VersionInfo")
 	if err != nil {
 		return err
@@ -178,7 +185,6 @@ func (g *Grid) printVersionInfo() {
 	fmt.Println("")
 	fmt.Println("--------" + g.runtime + "--------")
 	fmt.Println(" proj:	" + infos[0])
-	fmt.Println(" date:	" + infos[1])
 	fmt.Println(" ver:	" + g.vername + "|" + strconv.Itoa(g.version))
 	fmt.Println(" info:	" + g.verinfo)
 	fmt.Println("------------------------------------------------")
@@ -198,7 +204,7 @@ func (g *Grid) selectTheRuntime() (string, error) {
 		}
 		fileName := fi.Name()
 		if g.isSoLibFile(fileName) {
-			fmt.Println("found and checking ... " + fileName)
+			fmt.Println("[grid-core]::found and checking ... " + fileName)
 			infos := strings.Split(strings.TrimSuffix(fileName, ".so"), "_")
 			if len(infos) == 2 {
 				if time, err := strconv.Atoi(infos[1]); err == nil {
@@ -213,7 +219,7 @@ func (g *Grid) selectTheRuntime() (string, error) {
 	if lstFile != "" {
 		return lstFile, nil
 	}
-	return "", errors.New("the appropriate runtime was not found!!")
+	return "", errors.New("[grid-core]::the appropriate runtime was not found!!")
 }
 
 func (g *Grid) tryK8sEvns() (bool, error) {
@@ -235,7 +241,7 @@ func (g *Grid) tryK8sEvns() (bool, error) {
 	for _, endpoint := range endpoints {
 		infos := strings.Split(endpoint, "://:")
 		if len(infos) < 2 {
-			return false, errors.New("illegal endpoints!!")
+			return false, errors.New("[grid-core]::illegal endpoints!!")
 		}
 		g.endpoints = append(g.endpoints, infos[0]+"://"+GRID_LOCAL_IP+":"+infos[1])
 	}

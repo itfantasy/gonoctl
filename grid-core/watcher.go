@@ -23,14 +23,19 @@ func (g *Grid) watchingDirectory() {
 					infos := strings.Split(wholePath, "/")
 					soName := infos[len(infos)-1]
 					if g.isSoLibFile(soName) {
-						fmt.Println("[watcher]::find a new runtime : ", soName)
+						fmt.Println("[grid-core]::find a new runtime : ", soName)
 						g.runtime = soName
-						<-time.After(time.Millisecond * time.Duration(3000))
+						<-time.After(time.Millisecond * time.Duration(1000))
+						fmt.Print("[grid-core]::loading .")
+						<-time.After(time.Millisecond * time.Duration(1000))
+						fmt.Print(".")
+						<-time.After(time.Millisecond * time.Duration(1000))
+						fmt.Println(".")
 						if err := g.autoHotUpdate(); err != nil {
 							fmt.Println(err.Error())
 							continue
 						}
-						fmt.Println("[watcher]::an new version : " + soName + " has been loaded !")
+						fmt.Println("[grid-core]::an new version : " + soName + " has been loaded !")
 						g.printVersionInfo()
 					}
 				}
