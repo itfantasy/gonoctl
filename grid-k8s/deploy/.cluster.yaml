@@ -1,4 +1,4 @@
-appname: grid-cluster-demo
+appname: k8scluster
 cluster: 
   namespace: itfantasy
   deployments:
@@ -7,18 +7,16 @@ cluster:
     endpoints:
     - tcp://:30005
     - kcp://:30006
-    - ws://:300010/game
-    runtime: /home/docker/runtime
+    - ws://:30010/game
     command: ""
-	enable: 1
+    enable: 1
   statedeployments: 
   - name: statesvc
     num: 3
     startindex: 1
     endpoints:
-    - tcp://:301xx
-    - kcp://:302xx
-    - ws://:303xx/statesvc
-    runtime: /home/docker/runtime
+    - tcp://:30100
+    - kcp://:30200
+    - ws://:30300/statesvc
     command: ""
-	enable: 1
+    enable: 1

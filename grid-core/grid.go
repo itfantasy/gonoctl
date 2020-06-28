@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -234,10 +233,8 @@ func (g *Grid) tryK8sEvns() (bool, error) {
 	g.nodeid = GRID_NODE_ID
 	g.namespace = GRID_NODE_NAMESPACE
 
-	endpoints := make([]string, 0, 1)
-	if err := json.Unmarshal([]byte(GRID_NODE_ENDPOINTS), endpoints); err != nil {
-		return false, err
-	}
+	endpoints := strings.Split(GRID_NODE_ENDPOINTS, ",")
+
 	for _, endpoint := range endpoints {
 		infos := strings.Split(endpoint, "://:")
 		if len(infos) < 2 {

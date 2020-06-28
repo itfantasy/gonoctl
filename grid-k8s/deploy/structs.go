@@ -13,7 +13,6 @@ type Deployment struct {
 	Name      string
 	Num       int
 	Endpoints []string
-	Runtime   string
 	Command   string
 	Enable    int
 }
@@ -23,7 +22,6 @@ type StateDeployment struct {
 	Num        int
 	StartIndex int
 	Endpoints  []string
-	Runtime    string
 	Command    string
 	Enable     int
 }

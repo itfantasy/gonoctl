@@ -17,11 +17,11 @@ spec:
       hostNetwork: true
       containers:
       - name: ##NAME##-instance
-        image: itfantasy/grid
-        command: ["etc/grid/grid-core", "-d=/etc/grid/runtime"##COMMAND##]
+        image: itfantasy/grid:latest
+        command: ["etc/grid/grid-core", "-proj=/mnt/grid/runtime/##NAME##"##COMMAND##]
         volumeMounts:
         - name: runtime-volume
-          mountPath: /etc/grid/runtime
+          mountPath: /mnt/grid/runtime
         ports:
 ##POINTS##
         env:
@@ -30,7 +30,7 @@ spec:
         - name: GRID_NODE_NAME
           value: ##NAME##
         - name: GRID_NODE_ENDPOINTS
-          value: ##ENDPOINTS##
+          value: "##ENDPOINTS##"
         - name: GRID_LOCAL_IP
           valueFrom:
             fieldRef:
@@ -39,6 +39,5 @@ spec:
           value: ##NAMESPACE##
       volumes:
       - name: runtime-volume
-        hostPath:
-          path: ##RUNTIME##
-          type: Directory
+        persistentVolumeClaim:
+          claimName: pvc-##APPNAME##

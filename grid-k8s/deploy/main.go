@@ -70,7 +70,7 @@ func parseStateDeploymentPorts(endpoints []string) string {
 	var itemFormate string = "        - containerPort: %v\r\n          hostPort: %v\r\n          protocol: %v\r\n"
 	for _, item := range endpoints {
 		info := parseEndpoint(item)
-		ret += fmt.Sprint(itemFormate, info[1], info[1], info[0])
+		ret += fmt.Sprintf(itemFormate, info[1], info[1], info[0])
 	}
 	return ret
 }
@@ -80,17 +80,17 @@ func parseDeploymentPorts(endpoints []string) string {
 	var itemFormate string = "        - containerPort: %v\r\n          protocol: %v\r\n"
 	for _, item := range endpoints {
 		info := parseEndpoint(item)
-		ret += fmt.Sprint(itemFormate, info[1], info[0])
+		ret += fmt.Sprintf(itemFormate, info[1], info[0])
 	}
 	return ret
 }
 
 func parseServicePorts(endpoints []string) string {
 	var ret = ""
-	var itemFormate string = "  - port: %v\r\n    targetPort: %v\r\n     nodePort: %v\r\n     protocol: %v\r\n"
-	for _, item := range endpoints {
+	var itemFormate string = "  - port: %v\r\n    targetPort: %v\r\n    nodePort: %v\r\n    protocol: %v\r\n    name: %v\r\n"
+	for index, item := range endpoints {
 		info := parseEndpoint(item)
-		ret += fmt.Sprint(itemFormate, info[1], info[1], info[1], info[0])
+		ret += fmt.Sprintf(itemFormate, info[1], info[1], info[1], info[0], "port"+strconv.Itoa(index))
 	}
 	return ret
 }
@@ -125,8 +125,8 @@ func deployStateDeployment(yamlConf string, appName string, namespace string, de
 		conf = strings.Replace(conf, "##NUM##", strconv.Itoa(deploy.Num), -1)
 		conf = strings.Replace(conf, "##PORTS##", parseStateDeploymentPorts(deploy.Endpoints), -1)
 		conf = strings.Replace(conf, "##STATEINDEX##", stateIndex, -1)
-		conf = strings.Replace(conf, "##RUNTIME##", deploy.Runtime, -1)
 		conf = strings.Replace(conf, "##COMMAND##", parseCommand(deploy.Command), -1)
+		conf = strings.Replace(conf, "##ENDPOINTS##", serialEndpoints(deploy.Endpoints), -1)
 
 		insName := deploy.Name + "-" + stateIndex
 		filePath := io.CurrentDir() + "." + insName + ".yaml"
@@ -169,8 +169,8 @@ func deployDeployment(yamlConf string, appName string, namespace string, deploy 
 	conf = strings.Replace(conf, "##NAME##", deploy.Name, -1)
 	conf = strings.Replace(conf, "##NUM##", strconv.Itoa(deploy.Num), -1)
 	conf = strings.Replace(conf, "##PORTS##", parseDeploymentPorts(deploy.Endpoints), -1)
-	conf = strings.Replace(conf, "##RUNTIME##", deploy.Command, -1)
 	conf = strings.Replace(conf, "##COMMAND##", parseCommand(deploy.Command), -1)
+	conf = strings.Replace(conf, "##ENDPOINTS##", serialEndpoints(deploy.Endpoints), -1)
 
 	filePath := io.CurrentDir() + "." + deploy.Name + ".yaml"
 	if err := io.SaveFile(filePath, conf); err != nil {
@@ -238,7 +238,19 @@ func parseEndpoint(endpoint string) []string {
 	} else {
 		ret = append(ret, "TCP")
 	}
-	ret = append(ret, info[1])
+	portInfo := strings.Split(info[1], "/")
+	ret = append(ret, portInfo[0])
+	return ret
+}
+
+func serialEndpoints(endpoints []string) string {
+	ret := ""
+	for _, item := range endpoints {
+		if ret != "" {
+			ret += ","
+		}
+		ret += item
+	}
 	return ret
 }
 
