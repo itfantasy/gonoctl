@@ -127,6 +127,7 @@ func deployStateDeployment(yamlConf string, appName string, namespace string, de
 		conf = strings.Replace(conf, "##STATEINDEX##", stateIndex, -1)
 		conf = strings.Replace(conf, "##COMMAND##", parseCommand(deploy.Command), -1)
 		conf = strings.Replace(conf, "##ENDPOINTS##", serialEndpoints(deploy.Endpoints), -1)
+		conf = strings.Replace(conf, "##PROJ##", deploy.Proj, -1)
 
 		insName := deploy.Name + "-" + stateIndex
 		filePath := io.CurrentDir() + "." + insName + ".yaml"
@@ -171,6 +172,7 @@ func deployDeployment(yamlConf string, appName string, namespace string, deploy 
 	conf = strings.Replace(conf, "##PORTS##", parseDeploymentPorts(deploy.Endpoints), -1)
 	conf = strings.Replace(conf, "##COMMAND##", parseCommand(deploy.Command), -1)
 	conf = strings.Replace(conf, "##ENDPOINTS##", serialEndpoints(deploy.Endpoints), -1)
+	conf = strings.Replace(conf, "##PROJ##", deploy.Proj, -1)
 
 	filePath := io.CurrentDir() + "." + deploy.Name + ".yaml"
 	if err := io.SaveFile(filePath, conf); err != nil {

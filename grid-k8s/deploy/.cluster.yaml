@@ -8,6 +8,7 @@ cluster:
     - tcp://:30005
     - kcp://:30006
     - ws://:30010/game
+    proj: game
     command: ""
     enable: 1
   statedeployments: 
@@ -18,5 +19,6 @@ cluster:
     - tcp://:30100
     - kcp://:30200
     - ws://:30300/statesvc
+    proj: statesvc
     command: ""
     enable: 1

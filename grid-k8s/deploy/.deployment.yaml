@@ -16,7 +16,7 @@ spec:
       containers:
       - name: ##NAME##-instance
         image: itfantasy/grid:latest
-        command: ["etc/grid/grid-core", "-proj=/mnt/grid/runtime/##NAME##"##COMMAND##]
+        command: ["etc/grid/grid-core", "-proj=/mnt/grid/runtime/##PROJ##"##COMMAND##]
         volumeMounts:
         - name: runtime-volume
           mountPath: /mnt/grid/runtime
