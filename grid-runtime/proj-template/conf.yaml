@@ -1,8 +1,1 @@
-namespace: icloud
-regdc: etcd://192.168.10.18:2371/gonode
-nodeid: grid_1024
-endpoints:
-  - tcp://192.168.10.85:5056
-  - kcp://192.168.10.85:5066
-ispub: true
-backends:
+regdc: etcd://172.21.1.198:32379/gonode

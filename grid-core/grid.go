@@ -49,9 +49,13 @@ type Grid struct {
 	verinfo string
 
 	namespace string
+	regdc     string
 	nodeid    string
 	endpoints []string
-	etc       string
+	backends  string
+	ispub     int
+
+	etc string
 }
 
 func NewGrid() *Grid {
@@ -84,11 +88,24 @@ func (g *Grid) initialize(parser *args.ArgParser) error {
 		if namespace, b := parser.Get("namespace"); b {
 			g.namespace = namespace
 		}
+		if regdc, b := parser.Get("regdc"); b {
+			g.regdc = regdc
+		}
 		if nodeid, b := parser.Get("nodeid"); b && nodeid != "" {
 			g.nodeid = nodeid
 		}
 		if endpoints, b := parser.Get("endpoints"); b && endpoints != "" {
 			g.endpoints = strings.Split(endpoints, ",")
+		}
+		if backends, b := parser.Get("backends"); b {
+			g.backends = backends
+		}
+		if strpub, b := parser.Get("ispub"); b {
+			if ispub, err := strconv.Atoi(strpub); err != nil {
+				g.ispub = 0
+			} else {
+				g.ispub = ispub
+			}
 		}
 		if etc, b := parser.Get("etc"); b {
 			g.etc = etc
@@ -103,14 +120,16 @@ func (g *Grid) initialize(parser *args.ArgParser) error {
 		return errors.New("endpoint list (-endpoints) is necessary!")
 	}
 
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
+	if !k8sEvn {
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
+			return err
+		}
+		if watcher.Add(g.proj); err != nil {
+			return err
+		}
+		g.watcher = watcher
 	}
-	if watcher.Add(g.proj); err != nil {
-		return err
-	}
-	g.watcher = watcher
 
 	return nil
 }
@@ -119,8 +138,11 @@ func (g *Grid) configParser() *args.ArgParser {
 	parser := args.Parser().
 		AddArg("proj", "", "the project dir which will mount for grid").
 		AddArg("namespace", "", "set the namespace, such as 'itfantasy'").
+		AddArg("regdc", "", "set the registration data center of all the cluster nodes").
 		AddArg("nodeid", "", "set the nodeid, such as 'game_1024'").
 		AddArg("endpoints", "", "set the endpoint list, such as 'tcp://yourserver:30005,kcp://yourserver:30006,ws://yourserver:30007/game_1024'").
+		AddArg("backends", "", "set the backend labels, such as 'gate,lobby'").
+		AddArg("ispub", "", "set whether the node can be connected by client peer, such as 0 or 1").
 		AddArg("etc", "", "extra configs")
 	return parser
 }
@@ -156,7 +178,7 @@ func (g *Grid) autoLaunch() error {
 	if err != nil {
 		return err
 	}
-	funcLaunch.(func(string, string, string, []string, string))(g.proj, g.namespace, g.nodeid, g.endpoints, g.etc)
+	funcLaunch.(func(string, string, string, string, []string, string, int, string))(g.proj, g.namespace, g.regdc, g.nodeid, g.endpoints, g.backends, g.ispub, g.etc)
 	return nil
 }
 
@@ -203,7 +225,6 @@ func (g *Grid) selectTheRuntime() (string, error) {
 		}
 		fileName := fi.Name()
 		if g.isSoLibFile(fileName) {
-			fmt.Println("[grid-core]::found and checking ... " + fileName)
 			infos := strings.Split(strings.TrimSuffix(fileName, ".so"), "_")
 			if len(infos) == 2 {
 				if time, err := strconv.Atoi(infos[1]); err == nil {
@@ -227,14 +248,17 @@ func (g *Grid) tryK8sEvns() (bool, error) {
 		return false, nil
 	}
 	GRID_NODE_NAMESPACE := os.Getenv("GRID_NODE_NAMESPACE")
+	GRID_NODE_REGDC := os.Getenv("GRID_NODE_REGDC")
 	GRID_NODE_ENDPOINTS := os.Getenv("GRID_NODE_ENDPOINTS")
 	GRID_LOCAL_IP := os.Getenv("GRID_LOCAL_IP")
+	GRID_NODE_BACKENDS := os.Getenv("GRID_NODE_BACKENDS")
+	GRID_NODE_ISPUB := os.Getenv("GRID_NODE_ISPUB")
 
 	g.nodeid = GRID_NODE_ID
 	g.namespace = GRID_NODE_NAMESPACE
+	g.regdc = GRID_NODE_REGDC
 
 	endpoints := strings.Split(GRID_NODE_ENDPOINTS, ",")
-
 	for _, endpoint := range endpoints {
 		infos := strings.Split(endpoint, "://:")
 		if len(infos) < 2 {
@@ -243,5 +267,11 @@ func (g *Grid) tryK8sEvns() (bool, error) {
 		g.endpoints = append(g.endpoints, infos[0]+"://"+GRID_LOCAL_IP+":"+infos[1])
 	}
 
+	g.backends = GRID_NODE_BACKENDS
+	if ispub, err := strconv.Atoi(GRID_NODE_ISPUB); err != nil {
+		g.ispub = 0
+	} else {
+		g.ispub = ispub
+	}
 	return true, nil
 }

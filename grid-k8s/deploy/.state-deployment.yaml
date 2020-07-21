@@ -9,10 +9,10 @@ spec:
     metadata:
       labels:
         app: ##APPNAME##
-        engine: itfantasy-grid
         tag: ##NAME##
         namespace: ##NAMESPACE##
         stateIndex: "##STATEINDEX##"
+        provider: itfantasy
     spec:
       hostNetwork: true
       containers:
@@ -23,7 +23,7 @@ spec:
         - name: runtime-volume
           mountPath: /mnt/grid/runtime
         ports:
-##POINTS##
+##PORTS##
         env:
         - name: GRID_NODE_ID
           value: ##NAME##-##STATEINDEX##
@@ -37,6 +37,12 @@ spec:
               fieldPath: status.podIP
         - name: GRID_NODE_NAMESPACE
           value: ##NAMESPACE##
+        - name: GRID_NODE_REGDC
+          value: "##REGDC##"
+        - name: GRID_NODE_BACKENDS
+          value: "##BACKENDS##"
+        - name: GRID_NODE_ISPUB
+          value: "##ISPUB##"
       volumes:
       - name: runtime-volume
         persistentVolumeClaim:

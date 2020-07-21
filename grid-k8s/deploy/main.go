@@ -46,6 +46,7 @@ func deployGridClusterForK8s(cluster *ClusterInfo) error {
 		if err := deployDeployment(yamlConf,
 			cluster.AppName,
 			cluster.Cluster.NameSpace,
+			cluster.Cluster.RegDC,
 			&deployment); err != nil {
 			return err
 		}
@@ -58,6 +59,7 @@ func deployGridClusterForK8s(cluster *ClusterInfo) error {
 		if err := deployStateDeployment(yamlConf,
 			cluster.AppName,
 			cluster.Cluster.NameSpace,
+			cluster.Cluster.RegDC,
 			&stateDeployment); err != nil {
 			return err
 		}
@@ -95,26 +97,24 @@ func parseServicePorts(endpoints []string) string {
 	return ret
 }
 
-func deployStateDeployment(yamlConf string, appName string, namespace string, deploy *StateDeployment) error {
-	if deploy.Enable < 0 {
-		for i := 0; i < deploy.Num; i++ {
-			stateIndex := strconv.Itoa(deploy.StartIndex + i)
-			insName := deploy.Name + "-" + stateIndex
-			var out bytes.Buffer
-			var stderr bytes.Buffer
-			cmd := exec.Command("kubectl", "delete", "deployment", insName)
-			cmd.Stdout = &out
-			cmd.Stderr = &stderr
-			if err := cmd.Run(); err != nil {
-				fmt.Println("[" + insName + "]:" + fmt.Sprint(err) + ": " + stderr.String())
-				continue
-			} else {
-				fmt.Println(insName + " has been deleted!")
-			}
+func deployStateDeployment(yamlConf string, appName string, namespace string, regdc string, deploy *StateDeployment) error {
+	if deploy.Enable == 0 {
+		return nil
+	}
+
+	for i := 0; i < deploy.Num; i++ {
+		stateIndex := strconv.Itoa(deploy.StartIndex + i)
+		insName := deploy.Name + "-" + stateIndex
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		cmd := exec.Command("kubectl", "delete", "deployment", insName)
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		} else {
+			fmt.Println(insName + " has been deleted!")
 		}
-		return nil
-	} else if deploy.Enable == 0 {
-		return nil
 	}
 
 	for i := 0; i < deploy.Num; i++ {
@@ -128,6 +128,9 @@ func deployStateDeployment(yamlConf string, appName string, namespace string, de
 		conf = strings.Replace(conf, "##COMMAND##", parseCommand(deploy.Command), -1)
 		conf = strings.Replace(conf, "##ENDPOINTS##", serialEndpoints(deploy.Endpoints), -1)
 		conf = strings.Replace(conf, "##PROJ##", deploy.Proj, -1)
+		conf = strings.Replace(conf, "##REGDC##", regdc, -1)
+		conf = strings.Replace(conf, "##BACKENDS##", deploy.BackEnds, -1)
+		conf = strings.Replace(conf, "##ISPUB##", strconv.Itoa(deploy.IsPub), -1)
 
 		insName := deploy.Name + "-" + stateIndex
 		filePath := io.CurrentDir() + "." + insName + ".yaml"
@@ -149,20 +152,21 @@ func deployStateDeployment(yamlConf string, appName string, namespace string, de
 	return nil
 }
 
-func deployDeployment(yamlConf string, appName string, namespace string, deploy *Deployment) error {
-	if deploy.Enable < 0 {
-		var out bytes.Buffer
-		var stderr bytes.Buffer
-		cmd := exec.Command("kubectl", "delete", "deployment", deploy.Name)
-		cmd.Stdout = &out
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			fmt.Println("[" + deploy.Name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
-			return nil
-		}
-		return deleteService(deploy.Name)
-	} else if deploy.Enable == 0 {
+func deployDeployment(yamlConf string, appName string, namespace string, regdc string, deploy *Deployment) error {
+	if deploy.Enable == 0 {
 		return nil
+	}
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd := exec.Command("kubectl", "delete", "deployment", deploy.Name)
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Println("[" + deploy.Name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
+	}
+	if err := deleteService(deploy.Name); err != nil {
+		fmt.Println(err)
 	}
 
 	conf := strings.Replace(yamlConf, "##APPNAME##", appName, -1)
@@ -173,16 +177,16 @@ func deployDeployment(yamlConf string, appName string, namespace string, deploy 
 	conf = strings.Replace(conf, "##COMMAND##", parseCommand(deploy.Command), -1)
 	conf = strings.Replace(conf, "##ENDPOINTS##", serialEndpoints(deploy.Endpoints), -1)
 	conf = strings.Replace(conf, "##PROJ##", deploy.Proj, -1)
+	conf = strings.Replace(conf, "##REGDC##", regdc, -1)
+	conf = strings.Replace(conf, "##BACKENDS##", deploy.BackEnds, -1)
+	conf = strings.Replace(conf, "##ISPUB##", strconv.Itoa(deploy.IsPub), -1)
 
 	filePath := io.CurrentDir() + "." + deploy.Name + ".yaml"
 	if err := io.SaveFile(filePath, conf); err != nil {
 		return err
 	}
 
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-
-	cmd := exec.Command("kubectl", "apply", "-f", "."+deploy.Name+".yaml")
+	cmd = exec.Command("kubectl", "apply", "-f", "."+deploy.Name+".yaml")
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -212,7 +216,6 @@ func deployService(appName string, name string, endPoints []string) error {
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
 		return err
 	}
 	io.DeleteFile(filePath)
@@ -226,8 +229,7 @@ func deleteService(name string) error {
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		fmt.Println("[" + name + "]:" + fmt.Sprint(err) + ": " + stderr.String())
-		return nil
+		fmt.Println("[" + name + "-service" + "]:" + fmt.Sprint(err) + ": " + stderr.String())
 	}
 	return nil
 }

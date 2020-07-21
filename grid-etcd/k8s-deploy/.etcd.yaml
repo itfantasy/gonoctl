@@ -1,0 +1,41 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: grid-etcd
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ##APPNAME##
+        tag: grid-etcd
+        provider: itfantasy
+    spec:
+      containers:
+      - name: grid-etcd
+        image: itfantasy/grid-etcd:latest
+        command: ["/bin/sh", "etc/grid/etcd/boot.sh"]
+        volumeMounts:
+        - name: runtime-volume
+          mountPath: /mnt/grid/runtime
+        ports:
+        - containerPort: 32379
+          protocol: TCP
+        - containerPort: 32380
+          protocol: TCP
+        env:
+        - name: ETCD_NODE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ETCD_NODE_NAME
+          value: grid-etcd
+        - name: ETCD_LOCAL_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+      volumes:
+      - name: runtime-volume
+        persistentVolumeClaim:
+          claimName: pvc-##APPNAME##

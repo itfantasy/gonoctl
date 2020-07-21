@@ -1,0 +1,1 @@
+docker build grid-etcd -t itfantasy/grid-etcd:latest

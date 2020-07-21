@@ -1,14 +1,17 @@
-appname: k8scluster
+appname: k8cluster
 cluster: 
   namespace: itfantasy
+  regdc: etcd://172.21.1.198:32379/gonode
   deployments:
-  - name: game
+  - name: proj-template
     num: 3
     endpoints:
     - tcp://:30005
     - kcp://:30006
-    - ws://:30010/game
-    proj: game
+    - ws://:30010/proj-template
+    proj: proj-template
+    backends: ""
+    ispub: 1
     command: ""
     enable: 1
   statedeployments: 
@@ -20,5 +23,7 @@ cluster:
     - kcp://:30200
     - ws://:30300/statesvc
     proj: statesvc
+    backends: ""
+    ispub: 1
     command: ""
-    enable: 1
+    enable: 0

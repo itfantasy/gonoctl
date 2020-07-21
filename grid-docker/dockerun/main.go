@@ -21,8 +21,11 @@ func configParser() *args.ArgParser {
 	parser := args.Parser().
 		AddArg("proj", "aa", "the project dir which will mount for grid").
 		AddArg("namespace", "", "set the namespace, such as 'itfantasy'").
+		AddArg("regdc", "", "set the registration data center of all the cluster nodes").
 		AddArg("nodeid", "", "set the nodeid, such as 'game_1024'").
 		AddArg("endpoints", "", "set the endpoint list, such as 'tcp://yourserver:30005,kcp://yourserver:30006,ws://yourserver:30007/game_1024'").
+		AddArg("backends", "", "set the backend labels, such as 'gate,lobby'").
+		AddArg("ispub", "", "set whether the node can be connected by client peer, such as 0 or 1").
 		AddArg("etc", "", "extra configs")
 	return parser
 }
@@ -45,6 +48,9 @@ func runGridDockerImage(parser *args.ArgParser) error {
 	}
 
 	namespace, _ := parser.Get("namespace")
+	regdc, _ := parser.Get("regdc")
+	backends, _ := parser.Get("backends")
+	ispub, _ := parser.Get("ispub")
 	etc, _ := parser.Get("etc")
 
 	gridCmd := "etc/grid/grid-core -proj=/etc/grid/runtime"
@@ -52,6 +58,15 @@ func runGridDockerImage(parser *args.ArgParser) error {
 	gridCmd += " -endpoints=" + endpoints
 	if namespace != "" {
 		gridCmd += " -namespace=" + namespace
+	}
+	if regdc != "" {
+		gridCmd += " -regdc=" + regdc
+	}
+	if backends != "" {
+		gridCmd += " -backends=" + backends
+	}
+	if ispub != "" {
+		gridCmd += " -ispub=" + ispub
 	}
 	if etc != "" {
 		gridCmd += " -etc=" + etc

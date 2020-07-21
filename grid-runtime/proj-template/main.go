@@ -17,7 +17,7 @@ func main() {
 }
 
 func setupConfig() (*gen_server.NodeInfo, error) {
-	conf, err := io.LoadFile(io.CurrentDir() + "conf.yaml")
+	conf, err := io.LoadFile(io.CurrentDir() + "conf.dev.yaml")
 	if err != nil {
 		return nil, err
 	}
