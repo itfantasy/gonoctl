@@ -36,8 +36,9 @@ func run() error {
 
 func buildTheRunTime(projName string) error {
 
+	time := ts.Time()
 	fileName := projName
-	fileName += "_" + ts.TimeToStr(ts.Time(), ts.FORMAT_NOW_C)
+	fileName += "_" + ts.TimeToStr(time, ts.FORMAT_NOW_C)
 	fileName += ".so"
 
 	projPath := projName + "/"
@@ -64,14 +65,16 @@ func buildTheRunTime(projName string) error {
 	cmd.Wait()
 
 	// create the .meta file
-	createMetaFile(projPath, fileName)
+	createMetaFile(projPath, fileName, projName, ts.TimeToStr(time, ts.FORMAT_NOW_A))
 
 	fmt.Println(projPath + fileName + " build succeed!!")
 	return nil
 }
 
-func createMetaFile(projPath string, fileName string) {
+func createMetaFile(projPath string, fileName string, projName string, date string) {
 	meta := ""
+	meta = "project: " + projName + "\r\n"
+	meta += "date: " + date + "\r\n"
 	file, err := os.Open(projPath + "runtime.go")
 	if err != nil {
 		fmt.Println(err)
